@@ -69,7 +69,7 @@ else:
    FileSizeInKBytes =commands.getstatusoutput('ls  -lth --block-size=1024 '+PWDDIR+'/'+outfile)[1].split()[4]
    if(int(FileSizeInKBytes)>10 and stageout):
       print("Preparing for stageout of " + PWDDIR+'/'+outfile + ' on ' + conf.CASTORDIR+'/'+outfile + '.  The file size is %d KB' % int(FileSizeInKBytes))
-      cpCmd = "eos cp %s/%s "%(PWDDIR,outfile)
+      cpCmd = "xrdcp %s/%s "%(PWDDIR,outfile)
       cpCmd+= "root://eoscms.cern.ch//eos/cms/%s/%s"%(conf.CASTORDIR,outfile)
       stageOutCode&= not os.system(conf.initEnv+" "+cpCmd)
       print conf.eosLs + conf.CASTORDIR+'/'+outfile

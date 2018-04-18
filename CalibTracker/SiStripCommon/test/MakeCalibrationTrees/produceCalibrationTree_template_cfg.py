@@ -125,7 +125,7 @@ process.shallowTracks.Tracks  = cms.InputTag( options.inputCollection )
 #process.shallowGainCalibrationAllBunch0T = 'ALCARECOSiStripCalMinBias' #cms.InputTag( options.inputCollection )
 
 #Setup prescale
-process.prescaleEvent.prescale = 1
+process.prescaleEvent.prescale = 10
 
 
 # BSCNoBeamHalo selection (Not to use for Cosmic Runs) --- OUTDATED!!!
