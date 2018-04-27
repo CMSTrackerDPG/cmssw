@@ -2,10 +2,10 @@
 import os, commands,time,sys
 
 class configuration:
-   datasetPat  = '/StreamExpress/Commiss*2018*-SiStripCalMinBias__AAG__-Express-v*/ALCARECO'
+   datasetPat  = '/StreamExpress/Run2018*-SiStripCalMinBias__AAG__-Express-v*/ALCARECO'
    CMSSWDIR    = '/afs/cern.ch/cms/tracker/sistrvalidation/Calibration/CalibrationTree/CMSSW_10_1_1/src/'
    RUNDIR      = CMSSWDIR+'CalibTracker/SiStripCommon/test/MakeCalibrationTrees/'
-   CASTORDIR   = '/store/group/dpg_tracker_strip/comm_tracker/Strip/Calibration/calibrationtree/GR18Commissioning__AAG__'
+   CASTORDIR   = '/store/group/dpg_tracker_strip/comm_tracker/Strip/Calibration/calibrationtree/GR18__AAG__'
    nFilesPerJob= 25
    collection  = "ALCARECOSiStripCalMinBias__AAG__"
    globalTag   = "101X_dataRun2_Express_v7"
@@ -71,7 +71,7 @@ class configuration:
 
       #Check castor path exists
       cmd = self.initEnv + self.eosLs.replace("-lrth","")+self.CASTORDIR
-      cmd = cmd[:-2]+"*"
+      cmd = cmd[:len(cmd)-len(cmd.split("/")[-1])]
       (status,output) = commands.getstatusoutput(cmd)
       if status or not self.CASTORDIR.split("/")[-1] in output:
          print cmd
