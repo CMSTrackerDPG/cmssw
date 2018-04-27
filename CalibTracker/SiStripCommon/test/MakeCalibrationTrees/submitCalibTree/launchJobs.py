@@ -7,6 +7,17 @@ import sys
 import commands
 import time
 import optparse
+import subprocess
+import re
+
+def isStreamDone(run):
+    out = subprocess.check_output(["curl", "-k", "-s", "https://cmsweb.cern.ch/t0wmadatasvc/prod/run_stream_done?run={}&stream=Express".format(run)])
+    m = re.match('{"result": \[\n (.*)\]}\n', out)
+    if m:
+        return m.group(1) == "true"
+    else:
+        print "Could not get correct info for run", run
+        return False
 
 def dasQuery(query,config):
   cmd = config.dasClient+" --limit=9999 --query=\"%s\""%query
@@ -123,8 +134,8 @@ def submitJobs(run, dataset, nFiles, conf):
          files+="'"+f+"',"
          filesInJob+=1
       else:
-         firstFile = firstFile+filesInJob
          sendJob(dataset,run,files,conf,firstFile)
+         firstFile = firstFile+filesInJob
          files="'"+f+"',"
          filesInJob=1
    sendJob(dataset,run,files,conf,firstFile)
@@ -151,6 +162,9 @@ def generateJobs(conf):
       for r in datasetRuns:
          if int(r) > conf.firstRun and int(r)<conf.lastRun:
             print "Checking run %s"%r
+            if not isStreamDone(r):
+              print "Stream not processed yet... break."
+              break
             n=getNumberOfEvents(r,d,conf)
             if n < 250:
                print "Skipped. (%s evt)"%n
