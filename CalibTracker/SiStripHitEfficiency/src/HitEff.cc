@@ -138,6 +138,7 @@ void HitEff::beginJob() {
   traj->Branch("withinAcceptance", &withinAcceptance, "withinAcceptance/O");
   traj->Branch("nHits", &nHits, "nHits/I");
   traj->Branch("pT", &pT, "pT/F");
+  traj->Branch("originalAlgo", &originalAlgo, "originalAlgo/i");
   traj->Branch("highPurity", &highPurity, "highPurity/O");
   traj->Branch("trajHitValid", &trajHitValid, "trajHitValid/i");
   traj->Branch("Id", &Id, "Id/i");
@@ -359,6 +360,7 @@ void HitEff::analyze(const edm::Event& e, const edm::EventSetup& es) {
 
       // track quality
       highPurity = itrack->quality(reco::TrackBase::TrackQuality::highPurity);
+      originalAlgo = itrack->originalAlgo();
 
       std::vector<TrajectoryMeasurement> TMeas = itraj->measurements();
       vector<TrajectoryMeasurement>::iterator itm;

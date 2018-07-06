@@ -110,6 +110,7 @@ private:
   unsigned int ModIsBad;
   unsigned int Id;
   unsigned int SiStripQualBad;
+  unsigned int originalAlgo;
   bool withinAcceptance;
   bool highPurity;
   int nHits;
