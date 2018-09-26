@@ -9,7 +9,7 @@ import optparse
 import submitCalibTree.Config
 import submitCalibTree.launchJobs
 
-mailAdd = ""
+mailAdd = "martin.delcourt@cern.ch"
 start = time.strftime("%D %H:%M")
 
 def mail(STDruns,AAGruns,cleanUpLog):
