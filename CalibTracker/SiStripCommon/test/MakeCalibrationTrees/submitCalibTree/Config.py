@@ -3,14 +3,14 @@ import os, commands,time,sys
 
 class configuration:
    datasetPat  = '/StreamExpress/Run2018*-SiStripCalMinBias__AAG__-Express-v*/ALCARECO'
-   CMSSWDIR    = 'TO_FILL_IN'
+   CMSSWDIR    = '/afs/cern.ch/cms/tracker/sistrvalidation/Calibration/CalibrationTree/CMSSW_10_2_0/src/'
    RUNDIR      = CMSSWDIR+'CalibTracker/SiStripCommon/test/MakeCalibrationTrees/'
    CASTORDIR   = '/store/group/dpg_tracker_strip/comm_tracker/Strip/Calibration/calibrationtree/GR18__AAG__'
    nFilesPerJob= 25
    collection  = "ALCARECOSiStripCalMinBias__AAG__"
-   globalTag   = "TO_UPDATE"
+   globalTag   = "101X_dataRun2_Express_v8"
    initEnv     = ""
-   dasClient   = "dasgoclient"
+   dasClient   = "/afs/cern.ch/user/v/valya/public/dasgoclient/dasgoclient_linux"
    eosLs       = "eos ls "
    def  __init__(self,AAG=False,debug=False):
       self.relaunchList= []
@@ -69,15 +69,15 @@ class configuration:
          print "RUN dir does not exist."
          goodConfig = False
 
-      #Check castor path exists FIXME
-      cmd = self.eosLs.replace("-lrth","")+self.CASTORDIR
-      cmd = cmd[:-2]+"*"
+      #Check castor path exists
+      cmd = self.initEnv + self.eosLs.replace("-lrth","")+self.CASTORDIR
+      cmd = cmd[:len(cmd)-len(cmd.split("/")[-1])]
       (status,output) = commands.getstatusoutput(cmd)
       if status or not self.CASTORDIR.split("/")[-1] in output:
          print cmd
          print output
          print "CASTOR dir does not exist."
-         goodConfig = False
+#         goodConfig = False #doesn't work within cron job... FIXME
       self.integrity = goodConfig
       return goodConfig
 

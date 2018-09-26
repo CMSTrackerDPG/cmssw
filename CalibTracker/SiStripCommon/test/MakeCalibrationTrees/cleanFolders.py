@@ -1,12 +1,40 @@
 import os
 
+def parseJobInfo(log):
+  jobInfo={}
+  jobInfo["isGood"] = False
+  jobInfo["Message"]= ""
+  if len(log)<15:
+    jobInfo["Message"] = "Error, log too short"
+    return jobInfo
+  else:
+    foundInfo = False
+    for line in log:
+      if not foundInfo:
+        if "***** Job information *****" in line:
+          foundInfo = True
+          continue
+      else:
+        if "***************************" in line:
+          jobInfo["isGood"]=True
+          return jobInfo
+        else:
+          line = line.split(" = ")
+          if len(line) > 1:
+            jobInfo[line[0].replace(" ","")] = line[1].replace("\n","")
+    jobInfo["Message"]="Warning, cannot find end of job info"
+    return jobInfo
+
+
+
+
 def getName(log):
    if len(log)<10:
       return ("Unable to get name (log too short)")
    else:
       Aag = None
       for line in log:
-         if "/store/express/Run2017" in line:
+         if "/store/express/Run2018" in line:
             Aag = "AfterAbortGap" in line
       if Aag == None:
          return ("Unable to get name (no AAG info found)")
@@ -27,7 +55,7 @@ def checkRelaunch(log):
       relaunchFile = "FailledRun_Aag.txt"
    else:
       return (-1)
-   
+
    relaunched = 0
    n=0
    with open(relaunchFile,"r") as f:
@@ -37,7 +65,7 @@ def checkRelaunch(log):
             relaunched = 1
             break
    return(relaunched)
-      
+
 def relaunchShort(folder):
    cmd=""
    if not "LSFJOB" in os.listdir(folder):
@@ -62,7 +90,7 @@ def relaunchShort(folder):
          nRuns = len(cmd[i+1].split(","))-1
    print "Found run specs : %s %s %s (AAG : %s)"%(run,firstFile,int(firstFile)+int(nRuns),AAG)
    name = "%s %s %s AAG = %s"%(run,firstFile,int(firstFile)+int(nRuns),AAG)
-   x = checkRelaunch(name)   
+   x = checkRelaunch(name)
    if x==0:
       print "Run not found in relaunch!!!"
       relaunch(folder,name)
@@ -109,10 +137,10 @@ for folder in os.listdir("."):
       continue
    if not "STDOUT" in os.listdir(folder):
       print "Error, no STDOUT file in folder %s !"%folder
-      continue 
+      continue
    log = open(folder+"/STDOUT","r").read()
-   
-   if "stageout" in log[-2000:]:
+
+   if "stageout" in log[-5000:]:
       NoError.append(folder)
    else:
       Error.append(folder)
@@ -123,10 +151,16 @@ ToKeep = []
 
 for f in NoError:
    log = open(f+"/STDOUT","r").read()
+   jobInfo = parseJobInfo(log.split("\n"))
+   if jobInfo["Message"] != "":
+     print "Warning in job info collection : %s"%jobInfo["Message"]
    if "WARNING WARNING WARNING STAGE OUT FAILED BUT NOT RELAUNCHED" in log:
       Error.append(f)
-   elif "The file size is" in log[-2000:]:
-      print "Removing good run %s - %s"%(f,getName(log.split("\n")))
+   elif "The file size is" in log[-5000:]:
+      if jobInfo["isGood"] and "jobinfo" in jobInfo.keys() and "mode" in jobInfo.keys():
+        print "Removing good run %s (%s) "%(jobInfo["jobinfo"],jobInfo["mode"])
+      else:
+        print "Removing good run despite bad job info %s - %s"%(f,getName(log.split("\n")))
       remove(f)
    else:
       print "Something fishy in %s (marked as good)"%f
@@ -136,6 +170,7 @@ for f in Error:
    toRemove=False
    log= open(f+"/STDOUT","r").read()
    log=log.split("\n")
+   jobStatus = parseJobInfo(log)
    eMessage=""
    if len(log)<80:
       print "Short in %s (%s)"%(f,len(log))
@@ -190,8 +225,31 @@ for f in Error:
          print "Found in relaunch list... deleting..."
          remove(f)
    else:
-      print "Something fishy in %s"%f
-      ToKeep.append(f)
+      info = "["
+      for k in jobStatus.keys():
+        info +="'%s' : %s ,"%(k,jobStatus[k])
+      info +="]"
+      print info
+      keys = ["stageOut", "isGood", "underthr", "mode", "file", "Message", "relaunched", "jobinfo", "outputCode"]
+      allKeys = True
+      goodJob = True
+      for k in keys:
+        if not k in jobStatus.keys():
+          allKeys = False
+          goodJob = False
+          break
+
+      if allKeys:
+        goodJob = jobStatus["outputCode"].isdigit() and int(jobStatus["outputCode"]) == 0
+        goodJob = goodJob and jobStatus["stageOut"] == "True"
+        goodJob = goodJob and jobStatus["Message"] ==""
+
+      if allKeys and goodJob:
+        print "Removing good job %s"%jobStatus["jobinfo"]
+        remove(f)
+      else:
+        print "Something fishy in %s"%f
+        ToKeep.append(f)
 
 if len(ToKeep)>0:
    print "Strange jobs :"

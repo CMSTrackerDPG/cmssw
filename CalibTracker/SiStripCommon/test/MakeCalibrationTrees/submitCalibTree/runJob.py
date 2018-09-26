@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
 import os
 import sys
 import commands
 import time
 import optparse
-from . import Config
+import Config
 
 usage = 'usage: %prog [options]'
 parser = optparse.OptionParser(usage)
@@ -62,24 +61,27 @@ cmd+=' runNumber=%s'%run
 print cmd
 
 exit_code = os.system(conf.initEnv+cmd)
-stageOutCode = True
+stageOutCode = False
+relaunched   = False
+underThreshold = False
 if(int(exit_code)!=0):
    print("Job Failed with ExitCode "+str(exit_code))
    os.system('echo %i %i %i >> FailledRun%s.txt' % (run, firstFile, firstFile+nFiles,'_Aag' if AAG else ''))
+   relaunched = True
 else:
    FileSizeInKBytes =commands.getstatusoutput('ls  -lth --block-size=1024 '+PWDDIR+'/'+outfile)[1].split()[4]
    if(int(FileSizeInKBytes)>10 and stageout):
       print("Preparing for stageout of " + PWDDIR+'/'+outfile + ' on ' + conf.CASTORDIR+'/'+outfile + '.  The file size is %d KB' % int(FileSizeInKBytes))
-      cpCmd = "eos cp %s/%s "%(PWDDIR,outfile)
+      cpCmd = "xrdcp %s/%s "%(PWDDIR,outfile)
       cpCmd+= "root://eoscms.cern.ch//eos/cms/%s/%s"%(conf.CASTORDIR,outfile)
-      stageOutCode&= not os.system(conf.initEnv+" "+cpCmd)
+      stageOutCode  = True
+      stageOutCode &= not os.system(conf.initEnv+" "+cpCmd)
       print conf.eosLs + conf.CASTORDIR+'/'+outfile
-      stageOutCode&= not os.system("eos ls " + conf.CASTORDIR+'/'+outfile)
+      stageOutCode &= not os.system("eos ls " + conf.CASTORDIR+'/'+outfile)
    else:
       print('File size is %d KB, this is under the threshold --> the file will not be transfered on EOS' % int(FileSizeInKBytes))
+      underThreshold = True
       print "Stageout status = %s"%stageout
-if not stageOutCode:
-   print "WARNING WARNING WARNING STAGE OUT FAILED BUT NOT RELAUNCHED"
 
 os.system('ls -lth '+PWDDIR+'/'+outfile)
 if stageout:
@@ -87,3 +89,14 @@ if stageout:
    os.system('rm -f ConfigFile_'+str(run)+'_'+str(firstFile)+'_cfg.py')
    os.system('cd ' + conf.RUNDIR)
    os.system('rm -rf LSFJOB_${LSB_JOBID}')
+
+
+print "***** Job information *****"
+print "file       = %s"%outfile
+print "mode       = %s"%('AAG' if AAG else "STD")
+print "outputCode = %s"%exit_code
+print "stageOut   = %s"%stageOutCode
+print "underthr   = %s"%underThreshold
+print "relaunched = %s"%relaunched
+print "job info   = %s %s %s"%(run, firstFile, firstFile+nFiles)
+print "***************************"
