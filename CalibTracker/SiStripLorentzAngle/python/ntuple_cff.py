@@ -22,3 +22,7 @@ LorentzAngleNtuple = cms.Sequence( (shallowClusters +
                                     shallowTrackClusters) *
                                    laCalibrationTree
                                    )
+
+######
+from CalibTracker.SiStripLorentzAngle.LorentzAngleRunInfo_cfi import *
+LorentzAngleRunInfo = cms.Sequence( lorentzAngleRunInfo )

@@ -138,6 +138,7 @@ void HitEff::beginJob(){
   traj->Branch("withinAcceptance",&withinAcceptance,"withinAcceptance/O");
   traj->Branch("nHits",&nHits,"nHits/I");
   traj->Branch("pT",&pT,"pT/F");
+  traj->Branch("originalAlgo",&originalAlgo,"originalAlgo/i");
   traj->Branch("highPurity",&highPurity,"highPurity/O");
   traj->Branch("trajHitValid", &trajHitValid, "trajHitValid/i");
   traj->Branch("Id",&Id,"Id/i");
@@ -325,9 +326,9 @@ void HitEff::analyze(const edm::Event& e, const edm::EventSetup& es){
     } else {
       timeDT = -999.0; timeDTErr = -999.0; timeDTDOF = -999; timeECAL = -999.0;
     }
-
 #endif
     // actually should do a loop over all the tracks in the event here
+
 
     // Looping over traj-track associations to be able to get traj & track informations
 	for(TrajTrackAssociationCollection::const_iterator it = trajTrackAssociationHandle->begin();
@@ -353,6 +354,9 @@ void HitEff::analyze(const edm::Event& e, const edm::EventSetup& es){
 	  highPurity = itrack->quality(reco::TrackBase::TrackQuality::highPurity);
 
       
+      // track quality
+      highPurity = itrack->quality(reco::TrackBase::TrackQuality::highPurity);
+      originalAlgo = itrack->originalAlgo();
       
       std::vector<TrajectoryMeasurement> TMeas=itraj->measurements();
       vector<TrajectoryMeasurement>::iterator itm;
@@ -364,8 +368,7 @@ void HitEff::analyze(const edm::Event& e, const edm::EventSetup& es){
       double angleY = -999.;
       double xglob,yglob,zglob;
 
-
-	  // Check whether the trajectory has some missing hits
+    // Check whether the trajectory has some missing hits
 	  bool hasMissingHits=false;
 	  for (itm=TMeas.begin();itm!=TMeas.end();itm++){
 	    auto theHit = (*itm).recHit();

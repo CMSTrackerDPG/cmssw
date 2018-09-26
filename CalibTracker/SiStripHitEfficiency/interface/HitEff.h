@@ -105,9 +105,10 @@ class HitEff : public edm::EDAnalyzer {
   float ClusterLocX, ClusterLocY, ClusterLocErrX, ClusterLocErrY, ClusterStoN;
   float ResX, ResXSig;
   unsigned int ModIsBad; unsigned int Id; unsigned int SiStripQualBad; bool withinAcceptance;
-  bool highPurity;
-  int nHits; 
+  int nHits;
+  unsigned int originalAlgo;
   float pT;
+  bool highPurity;
   unsigned int trajHitValid, run, event, bunchx;
   int tquality;
   float instLumi, PU;

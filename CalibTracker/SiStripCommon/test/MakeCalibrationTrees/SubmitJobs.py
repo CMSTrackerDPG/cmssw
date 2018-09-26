@@ -30,7 +30,8 @@ def mail(STDruns,AAGruns,cleanUpLog):
       else:
          runs[run[0]]+=1
 
-   runsOrdered = sorted(runs.keys())
+   runsOrdered = runs.keys()
+   runsOrdered.sort()
 
    for r in runsOrdered:
       message+=" Run %s (%s jobs) \n"%(r,runs[r])

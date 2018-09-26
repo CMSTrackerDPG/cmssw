@@ -101,8 +101,8 @@ process.shallowTracks.Tracks  = cms.InputTag( options.inputCollection )
 process.EventInfo = cms.EDAnalyzer("ShallowTree", 
 					CompressionSettings = process.gainCalibrationTreeStdBunch.CompressionSettings,
                             		outputCommands = cms.untracked.vstring('drop *',
-                                                                          'keep *_shallowEventRun_*_*',
-                                                                          )
+                                                                       'keep *_shallowEventRun_*_*',
+                                                                        )
                                    )
 #process.gainCalibrationTreeStdBunch.CompressionSettings = cms.untracked.int32(compressionSettings)
 #process.gainCalibrationTreeStdBunch0T.CompressionSettings = cms.untracked.int32(compressionSettings)

@@ -56,10 +56,10 @@ class PrescaleEventFilter : public edm::stream::EDFilter<edm::GlobalCache<presca
       static void globalEndJob(const prescale::Efficiency* efficiency);
 
    private:
-      void beginStream(edm::StreamID) override;
-      bool filter(edm::Event&, const edm::EventSetup&) override;
-      void endStream() override;
-
+      virtual void beginStream(edm::StreamID) override;
+      virtual bool filter(edm::Event&, const edm::EventSetup&) override;
+      virtual void endStream() override;
+  
       // ----------member data ---------------------------
 
       /// accept one in prescaleFactor_; 0 means never to accept an event
@@ -100,6 +100,10 @@ PrescaleEventFilter::PrescaleEventFilter(const edm::ParameterSet& iConfig,const 
 
 PrescaleEventFilter::~PrescaleEventFilter()
 {
+ 
+   // do anything here that needs to be done at destruction time
+   // (e.g. close files, deallocate resources etc.)
+
 }
 
 //

@@ -29,6 +29,8 @@
 <use   name="CalibFormats/SiStripObjects"/>
 <use   name="CalibTracker/SiStripLorentzAngle"/>
 <use   name="rootgraphics"/>
+<use   name="CommonTools/UtilAlgos"/>
+<use   name="root"/>
 <library   file="*.cc" name="CalibTrackerSiStripLorentzAnglePlugins">
   <flags   EDM_PLUGIN="1"/>
 </library>

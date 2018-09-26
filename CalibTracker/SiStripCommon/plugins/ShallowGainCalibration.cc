@@ -1,6 +1,7 @@
 #include "CalibTracker/SiStripCommon/interface/ShallowGainCalibration.h"
 #include "CalibFormats/SiStripObjects/interface/SiStripGain.h" 
-#include "CalibTracker/Records/interface/SiStripGainRcd.h"  
+#include "CalibTracker/Records/interface/SiStripGainRcd.h"
+#include "RecoLocalTracker/SiStripClusterizer/interface/SiStripClusterInfo.h"
 
 using namespace edm;
 using namespace reco;
@@ -30,6 +31,7 @@ ShallowGainCalibration::ShallowGainCalibration(const edm::ParameterSet& iConfig)
   produces <std::vector<unsigned char> >  ( Prefix + "amplitude"      + Suffix );
   produces <std::vector<double> >         ( Prefix + "gainused"       + Suffix );
   produces <std::vector<double> >         ( Prefix + "gainusedTick"   + Suffix );
+  produces <std::vector<float> >          ( Prefix + "variance"       + Suffix );
 }
 
 void ShallowGainCalibration::
@@ -52,6 +54,7 @@ produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   auto         amplitude     = std::make_unique<std::vector<unsigned char>>  ();
   auto         gainused      = std::make_unique<std::vector<double>>         ();
   auto         gainusedTick  = std::make_unique<std::vector<double>>         ();
+  auto         variance      = std::make_unique<std::vector<float>>          ();
 
   edm::ESHandle<TrackerGeometry> theTrackerGeometry;         iSetup.get<TrackerDigiGeometryRecord>().get( theTrackerGeometry );  
   m_tracker=&(* theTrackerGeometry );
@@ -110,6 +113,7 @@ produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
             double                  PrevGainTick   = -1;
             int                     FirstStrip     = 0;
             int                     NStrips        = 0;
+            float                   Variance       = -1;
 
             if(StripCluster){
                const auto           &  Ampls          = StripCluster->amplitudes();
@@ -148,6 +152,10 @@ produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
                if(FirstStrip+Ampls.size()==511                   )Overlapping=true;
                if(FirstStrip+Ampls.size()==639                   )Overlapping=true;
                if(FirstStrip+Ampls.size()==767                   )Overlapping=true;
+               
+               const SiStripClusterInfo info(*StripCluster, iSetup, DetId);
+               Variance = info.variance();
+               
             }else if(PixelCluster){
                const auto&             Ampls          = PixelCluster->pixelADC();
                int                     FirstRow       = PixelCluster->minPixelRow();
@@ -183,6 +191,7 @@ produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
             #endif
             gainused      ->push_back( PrevGain );  
             gainusedTick  ->push_back( PrevGainTick );  
+            variance      ->push_back( Variance );
           }
        }
   }
@@ -205,6 +214,7 @@ produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   iEvent.put(std::move(amplitude),     Prefix + "amplitude"     + Suffix );
   iEvent.put(std::move(gainused),      Prefix + "gainused"      + Suffix );
   iEvent.put(std::move(gainusedTick),  Prefix + "gainusedTick"  + Suffix );
+  iEvent.put(std::move(variance),      Prefix + "variance"      + Suffix );
 }
 
 /*
