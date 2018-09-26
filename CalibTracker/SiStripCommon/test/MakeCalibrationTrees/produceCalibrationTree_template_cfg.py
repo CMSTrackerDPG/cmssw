@@ -86,6 +86,14 @@ process.load('CalibTracker.SiStripCommon.ShallowEventDataProducer_cfi') #event I
 
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, options.conditionGT, options.conditionOverwrite)
+##### Override SiStripDetVoff Information using the 13h tag
+process.GlobalTag.toGet = cms.VPSet(
+   cms.PSet(record = cms.string("SiStripDetVOffRcd"),
+            tag = cms.string("SiStripDetVOff_13hourDelay_v1_Validation"),
+            connect = cms.string('frontier://FrontierProd/CMS_CONDITIONS')
+            )
+   )
+
 
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.StandardSequences.Services_cff')

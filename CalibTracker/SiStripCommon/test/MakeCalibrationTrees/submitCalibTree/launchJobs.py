@@ -1,26 +1,143 @@
 #!/usr/bin/env python
-import urllib
 import Config
-import string
-import os
-import sys
+import ConfigParser
+import ROOT
+import calendar
 import commands
-import time
+import datetime
+import glob
+import json
+import numpy
 import optparse
-import subprocess
+import os
 import re
+import string
+import subprocess
+import sys
+import time
+import urllib
 
-def isStreamDone(run):
-    if run == 322222:
-      print "WARNING, FORCE PROCESSING %s"%run
-      return True
-    out = subprocess.check_output(["curl", "-k", "-s", "https://cmsweb.cern.ch/t0wmadatasvc/prod/run_stream_done?run={}&stream=Express".format(run)])
-    m = re.match('{"result": \[\n (.*)\]}\n', out)
-    if m:
-        return m.group(1) == "true"
+from datetime import datetime
+import CondCore.Utilities.conddblib as conddb
+
+def log(s):
+    print time.strftime("%Y-%m-%d-%H-%M-%S: ") + s
+
+def getRunEndTime(con,run):
+
+    con = conddb.connect(url = conddb.make_url())
+    session = con.session()
+    RunInfo = session.get_dbtype(conddb.RunInfo)
+
+    bestRun = session.query(RunInfo.run_number,RunInfo.start_time, RunInfo.end_time).filter(RunInfo.run_number == run).first()
+    if bestRun is None:
+        raise Exception("Run %s can't be matched with an existing run in the database." %run)
+
+    stop = bestRun[2]
+    bestRunStopTime  = calendar.timegm( bestRun[2].utctimetuple() ) << 32
+
+    #print "run stop time: ",stop,"(",bestRunStopTime,")"
+
+    return bestRunStopTime
+
+def getRunStartTime(con,run):
+
+    con = conddb.connect(url = conddb.make_url())
+    session = con.session()
+    RunInfo = session.get_dbtype(conddb.RunInfo)
+
+    bestRun = session.query(RunInfo.run_number,RunInfo.start_time, RunInfo.end_time).filter(RunInfo.run_number == run).first()
+    if bestRun is None:
+        raise Exception("Run %s can't be matched with an existing run in the database." %run)
+
+    start= bestRun[1]
+    bestRunStartTime = calendar.timegm( bestRun[1].utctimetuple() ) << 32
+
+    #print "run start time:",start,"(",bestRunStartTime,")"
+    return bestRunStartTime
+
+def unpackLumiId(since):
+    kLowMask = 0XFFFFFFFF
+    run  = since >> 32
+    lumi = since & kLowMask
+    return run, lumi
+
+def _high(n):
+    return int(n) >> 32
+
+def _low(n):
+    return int(n) & 0xffffffff
+
+def since_to_date(since,isDateFormat=False):
+    """ converts tag since value to miliseconds """
+    dt = datetime.utcfromtimestamp(_high(since))
+    epoch = datetime.utcfromtimestamp(0) # January 1, 1970
+    ms = (dt - epoch).total_seconds()
+    if(not isDateFormat):
+        return str(datetime.utcfromtimestamp(ms))
     else:
-        print "Could not get correct info for run", run
+        return datetime.utcfromtimestamp(ms)
+
+def isRunOneDayOld(con,run):
+    endOfRun = getRunEndTime(con,run)
+    #now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    delta = datetime.utcnow()-since_to_date(endOfRun,True)
+    log("time difference {}".format(delta))
+    if( delta.days > 1):
+        return True
+    else:
         return False
+
+def isRunCoveredForTag(con,run,tag_name,myRecord):
+
+    session = con.session()
+    IOV     = session.get_dbtype(conddb.IOV)
+    TAG     = session.get_dbtype(conddb.Tag)
+    GT      = session.get_dbtype(conddb.GlobalTag)
+    GTMAP   = session.get_dbtype(conddb.GlobalTagMap)
+    RUNINFO = session.get_dbtype(conddb.RunInfo)
+
+    RefTagIOVs = session.query(IOV.since,IOV.payload_hash,IOV.insertion_time).filter(IOV.tag_name ==tag_name).all()
+    TagInfo = session.query(TAG.synchronization,TAG.time_type).filter(TAG.name == tag_name).all()[0]
+
+    if(TagInfo[1]=='Run'):
+        log("Time type is: {}".format(TagInfo[1]))
+        for i in RefTagIOVs:
+            if ( str(i[0])==str(run) ):
+                log("Found an IOV for run ={}".format(run))
+                return True
+    elif (TagInfo[1]=='Lumi'):
+        log("Time type is {}".format(TagInfo[1]))
+        for i in RefTagIOVs:
+            if(unpackLumiId(i[0])[0]>run):
+                log("Found an IOV ({}) > than the run={}".format(unpackLumiId(i[0]),run))
+                return True
+    elif (TagInfo[1]=='Time'):
+        end_time   = getRunEndTime(con,run)
+        log("Time type is: {}".format(TagInfo[1]))
+        for i in RefTagIOVs:
+            newdate1 = time.strptime(since_to_date(i[0]),"%Y-%m-%d %H:%M:%S")
+            newdate2 = time.strptime(since_to_date(end_time),"%Y-%m-%d %H:%M:%S")
+            if(newdate1 > newdate2):
+                log("Found an IOV ({}) > that the run endtime={}".format(since_to_date(i[0]),since_to_date(end_time)))
+                return True
+    else:
+        log("Should never happen!")
+
+
+def isStreamDone(con,run):
+  if(isRunOneDayOld(con,run)):
+    print "WARNING, FORCE PROCESSING %s AS IT IS MORE THAN 1D OLD"%run
+    return True
+
+  out = subprocess.check_output(["curl", "-k", "-s", "https://cmsweb.cern.ch/t0wmadatasvc/prod/run_stream_done?run={}&stream=Express".format(run)])
+  m = re.match('{"result": \[\n (.*)\]}\n', out)
+  if m:
+    return m.group(1) == "true"
+  else:
+    print "Could not get correct info for run", run
+    return False
 
 def dasQuery(query,config):
   cmd = config.dasClient+" --limit=9999 --query=\"%s\""%query
@@ -159,15 +276,28 @@ def generateJobs(conf):
    print conf
    lastRunProcessed = conf.firstRun
    datasets = getDatasetFromPattern(conf.datasetPat,conf)
+
+   import CondCore.Utilities.conddblib as conddb
+   con = conddb.connect(url = conddb.make_url("pro"))
+
    for d in datasets:
       datasetRuns = getRunsFromDataset(d,conf)
       print datasetRuns
       for r in datasetRuns:
          if int(r) > conf.firstRun and int(r)<conf.lastRun:
             print "Checking run %s"%r
-            if not isStreamDone(r):
+
+            hasDetVOff = isRunCoveredForTag(con,r,"SiStripDetVOff_13hourDelay_v1_Validation","SiStripDetVOffRcd")
+            if(hasDetVOff):
+              log("run {} has DetVOff coverage".format(r))
+            else:
+              log("run {} is NOT covered by DetVOff".format(r))
+              break
+
+            if not isStreamDone(con,r):
               print "Stream not processed yet... break."
               break
+
             n=getNumberOfEvents(r,d,conf)
             if n < 250:
                print "Skipped. (%s evt)"%n
