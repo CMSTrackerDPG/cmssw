@@ -80,7 +80,7 @@ class SiPixelDigitizerAlgorithm  {
   // for premixing
   void calculateInstlumiFactor(const std::vector<PileupSummaryInfo> &ps, int bunchSpacing); // TODO: try to remove the duplication of logic...
   void setSimAccumulator(const std::map<uint32_t, std::map<int, int> >& signalMap);
-  
+  void choose_snapshot(PileupMixingContent* puInfo);
  private:
   
   //Accessing Lorentz angle from DB:
@@ -267,8 +267,17 @@ class SiPixelDigitizerAlgorithm  {
      // constants for ROC level simulation for Phase1
      enum shiftEnumerator {FPixRocIdShift = 3, BPixRocIdShift = 6};     
      static const int rocIdMaskBits = 0x1F;      
+
+     // ==========  StuckTBMs 
+     std::vector<std::map<uint32_t, int> > DetectorSnapshots;
+     std::vector < std::vector <double> > snapshotProbabilities_vsPU;
+     std::vector < std::vector <int> > snapshotIds_vsPU;
+     int chosen_snapshot;
+     //=========================================================
+     
      void init_from_db(const edm::ESHandle<TrackerGeometry>&, const edm::ESHandle<SiPixelDynamicInefficiency>&);
      bool matches(const DetId&, const DetId&, const std::vector<uint32_t >&);
+     
    };
 
  //

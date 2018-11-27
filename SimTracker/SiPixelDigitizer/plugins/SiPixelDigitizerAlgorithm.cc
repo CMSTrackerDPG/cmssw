@@ -41,6 +41,7 @@
 // June, 2011: Bug Fix for pixels on ROC edges in module_killing_DB() (J. Bashir Butt)
 // February, 2018: Implement cluster charge reweighting (P. Schuetze, with code from A. Hazi)
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 
 #include "SimGeneral/NoiseGenerators/interface/GaussianTailNoiseGenerator.h"
@@ -55,6 +56,7 @@
 #include "FWCore/Utilities/interface/RandomNumberGenerator.h"
 #include "CLHEP/Random/RandGaussQ.h"
 #include "CLHEP/Random/RandFlat.h"
+#include "CLHEP/Random/RandGeneral.h"
 
 //#include "PixelIndices.h"
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
@@ -529,6 +531,76 @@ void SiPixelDigitizerAlgorithm::init_DynIneffDB(const edm::EventSetup& es, const
 
 void SiPixelDigitizerAlgorithm::PixelEfficiencies::init_from_db(const edm::ESHandle<TrackerGeometry>& geom, const edm::ESHandle<SiPixelDynamicInefficiency>& SiPixelDynamicInefficiency) {
   
+  // ==========  StuckTBMs 
+  std::string  line;
+  std::ifstream myfile ("/afs/cern.ch/work/t/tsusacms/public/2018/UltraLegacyReReco_devel/CMSSW_10_2_6/src/NtupleProduction/logs_forTanja/log_SiPixelQuality_byPCL_stuckTBM_v1.out");
+  
+  std::map<uint32_t, int> tmp;
+  int n_elem = 0; 
+  int n_elem_in = 0; 
+  
+  int first = 1;
+  if (myfile.is_open()){
+    while (getline (myfile, line)) {
+      std::size_t found = line.find("============");
+      if (found != std::string::npos){
+	++n_elem;
+	if (first != 1){
+	  ++n_elem_in;
+	  DetectorSnapshots.push_back(tmp);
+	  //std::cout << "READ IN SNAPSHOTS:" << n_elem_in << std::endl;
+	  //std::map<uint32_t, int>::iterator it;
+	  //for (it = tmp.begin(); it != tmp.end(); it++)
+	  //  {
+	  //    std::cout << it -> first << " " <<  it->second << std::endl;
+	  //  }
+	  //std::cout << "==================================================" << std::endl;
+	  tmp.clear();	  
+	}
+      }
+      else{
+	first = 0;
+	//std::cout << line << tmp.size() << '\n';	
+	std::istringstream iss (line);
+	std::string dummy;
+	uint32_t detId;
+	int badRocs;
+	iss >> dummy >> detId >> dummy >> dummy >> dummy >> dummy >>  badRocs;
+	//	std::cout << line << " " << detId <<  " " << badRocs << std::endl;
+	tmp.insert(std::pair<uint32_t,int>(detId, badRocs));
+      }      
+    }
+    DetectorSnapshots.push_back(tmp);
+    std::cout << "SIZE OF SNAPSHOT: " << sizeof(DetectorSnapshots) << std::endl;
+    myfile.close();
+  }    
+  std::cout << "Detector Snapshot Size: " << DetectorSnapshots.size() << std::endl;
+
+  // --------------  READ PROBABILITY VALUES
+  
+  //  myfile.open ("/afs/cern.ch/work/t/tsusacms/public/2018/UltraLegacyReReco_devel/CMSSW_10_2_6/src/NtupleProduction/snapshotProb_4runs.txt");
+  myfile.open ("/afs/cern.ch/work/t/tsusacms/public/2018/UltraLegacyReReco_devel/CMSSW_10_2_6/src/NtupleProduction/snapshotProb_322633.txt");
+  
+  if (myfile.is_open()){
+    while (getline (myfile, line)) {
+      std::cout << line << std::endl;
+      std::istringstream iss (line);            
+      int pileupBinId, nEntries;
+      iss >>  pileupBinId >>  nEntries;
+      //std::cout << "PILEUP BIN/ENTRIES:  " << pileupBinId << " " << nEntries <<  std::endl;
+      std::vector <int>  ids(nEntries, 0);
+      std::vector <double>  probs(nEntries, 0.0);
+      for (int i=0;i< nEntries; ++i){
+	iss >> ids.at(i) >> probs.at(i);
+	//std::cout << ids.at(i) << " " << probs.at(i)<< std::endl; 
+      }
+      snapshotProbabilities_vsPU.push_back(probs);
+      snapshotIds_vsPU.push_back(ids);
+    }    
+    myfile.close();
+  }
+  //=====================================================================
+  
   theInstLumiScaleFactor = SiPixelDynamicInefficiency->gettheInstLumiScaleFactor();
   const std::map<uint32_t, double>& PixelGeomFactorsDBIn = SiPixelDynamicInefficiency->getPixelGeomFactors();
   const std::map<uint32_t, double>& ColGeomFactorsDB = SiPixelDynamicInefficiency->getColGeomFactors();
@@ -777,6 +849,65 @@ void SiPixelDigitizerAlgorithm::calculateInstlumiFactor(const std::vector<Pileup
     }
   }
 }
+// ==========  StuckTBMs 
+
+void SiPixelDigitizerAlgorithm::choose_snapshot(PileupMixingContent* puInfo){
+  //Determine snapshot to use for the current event based on pileup information
+  
+  if (puInfo) {
+    const std::vector<int>& bunchCrossing = puInfo->getMix_bunchCrossing();
+    const std::vector<float>& TrueInteractionList = puInfo->getMix_TrueInteractions();    
+    //const std::vector<int>& nInteractionsList = puInfo->getMix_Ninteractions(); 
+    //const int bunchSpacing = puInfo->getMix_bunchSpacing();
+    
+    int pui = 0, p = 0;
+    std::vector<int>::const_iterator pu;
+    std::vector<int>::const_iterator pu0 = bunchCrossing.end();
+    
+    for (pu=bunchCrossing.begin(); pu!=bunchCrossing.end(); ++pu) {      
+      if (*pu==0) {	
+	pu0 = pu;
+	p = pui;
+      }
+      pui++;
+    }    
+    pixelEfficiencies_.chosen_snapshot = -1;
+    if (pu0!=bunchCrossing.end()) {
+      
+      double pileup = TrueInteractionList.at(p);  
+      unsigned int pileup_bin =  pileup; // case delta PU=1, fix me
+      std::cout << "==================>>>>>> PILEUP: "  << pileup << " " << pileup_bin << std::endl;	
+      std::cout << "            pixelEfficiencies_.snapshotProbabilities_vsPU.size(): " 
+		<<  pixelEfficiencies_.snapshotProbabilities_vsPU.size() << std::endl;
+      
+      
+      if (pileup_bin < pixelEfficiencies_.snapshotProbabilities_vsPU.size()-1){
+      	int nbins = pixelEfficiencies_.snapshotProbabilities_vsPU.at(pileup_bin).size();      	
+	std::cout <<  "NBINS: " << nbins << std::endl;
+	CLHEP::RandGeneral rgen1(&((pixelEfficiencies_.snapshotProbabilities_vsPU.at(pileup_bin)).front()),nbins);	
+	double x = rgen1.shoot();
+	std::cout << "RND: "<< x << " "<< x*nbins<< " " << int(x*nbins) << std::endl;  
+      	unsigned int index = x * nbins;
+	std::cout << "INDEX: " << index << " " << pixelEfficiencies_.snapshotIds_vsPU.at(pileup_bin).at(index) << std::endl;
+       	  
+	pixelEfficiencies_.chosen_snapshot = pixelEfficiencies_.snapshotIds_vsPU.at(pileup_bin).at(index);
+	
+	//std::cout << "Snapshot ID: " << pixelEfficiencies_.chosen_snapshot << std::endl;	
+	//pixelEfficiencies_.DetectorSnapshots[index]e
+	//std::cout << "SNAPSHOT: " << std::endl;
+	//std::map<uint32_t, int>::iterator it;
+	//for (it = pixelEfficiencies_.DetectorSnapshots[pixelEfficiencies_.chosen_snapshot].begin(); 
+	//     it != pixelEfficiencies_.DetectorSnapshots[pixelEfficiencies_.chosen_snapshot].end(); it++)
+	//  {
+	//    std::cout << it -> first << " " <<  it->second << std::endl;
+	//  }
+	//	std::cout << "====================================================" << std::endl;
+      }
+      
+    }
+  }
+}
+
 
 //============================================================================
 void SiPixelDigitizerAlgorithm::setSimAccumulator(const std::map<uint32_t, std::map<int, int> >& signalMap) {
@@ -1588,6 +1719,32 @@ void SiPixelDigitizerAlgorithm::pixel_inefficiency(const PixelEfficiencies& eff,
   std::vector<double> pixelEfficiencyROCStdPixels(16,1);
   std::vector<double> pixelEfficiencyROCBigPixels(16,1);
   
+    // ==========  StuckTBMs  
+  std::unique_ptr<PixelIndices> pIndexConverter(new PixelIndices(numColumns,numRows));
+  std::vector<int> isChipStuck(16,0);  
+  if (eff.chosen_snapshot != -1){    
+    if (eff.DetectorSnapshots.at(eff.chosen_snapshot).count(detID)){
+      for (int i=0; i<16; ++i){
+	//isChipStuck.at(i) = (eff.DetectorSnapshots.at(eff.chosen_snapshot).at(detID) >> i) &  1;	
+	int isBad = (eff.DetectorSnapshots.at(eff.chosen_snapshot).at(detID) >> i) &  1;
+	std::vector<CablingPathToDetUnit> path = map_.product()->pathToDetUnit(detID);
+	typedef  std::vector<CablingPathToDetUnit>::const_iterator IT;
+	for  (IT it = path.begin(); it != path.end(); ++it) {
+          const PixelROC* myroc = map_.product()->findItem(*it);
+          if( myroc->idInDetUnit() == static_cast<unsigned int>(i)) {
+	    LocalPixel::RocRowCol  local = { 39, 25};   //corresponding to center of ROC row, col
+	    GlobalPixel global = myroc->toGlobal( LocalPixel(local) );
+	    int chipIndex, colROC, rowROC;
+	    pIndexConverter->transformToROC(global.col,global.row,chipIndex,colROC,rowROC);
+	    isChipStuck.at(chipIndex) = isBad;	
+	    //std::cout << "------>>>>>>>> "  << i << " " << chipIndex << std::endl;
+	  }
+	}
+      }
+    }
+  }
+//=============================================================================
+
   if (eff.FromConfig) {
     // setup the chip indices conversion
     if    (pixdet->subDetector()==GeomDetEnumerators::SubDetector::PixelBarrel ||
@@ -1661,7 +1818,7 @@ void SiPixelDigitizerAlgorithm::pixel_inefficiency(const PixelEfficiencies& eff,
   
   // Initilize the index converter
   //PixelIndices indexConverter(numColumns,numRows);
-  std::unique_ptr<PixelIndices> pIndexConverter(new PixelIndices(numColumns,numRows));
+  // std::unique_ptr<PixelIndices> pIndexConverter(new PixelIndices(numColumns,numRows));
 
   int chipIndex = 0;
   int rowROC = 0;
@@ -1677,6 +1834,7 @@ void SiPixelDigitizerAlgorithm::pixel_inefficiency(const PixelEfficiencies& eff,
     std::pair<int,int> ip = PixelDigi::channelToPixel(chan);
     int row = ip.first;  // X in row
     int col = ip.second; // Y is in col
+    
     //transform to ROC index coordinates
     pIndexConverter->transformToROC(col,row,chipIndex,colROC,rowROC);
     int dColInChip = pIndexConverter->DColumn(colROC); // get ROC dcol from ROC col
@@ -1745,7 +1903,10 @@ void SiPixelDigitizerAlgorithm::pixel_inefficiency(const PixelEfficiencies& eff,
     } // end if
     if (isPhase1){
       if((pixelStd.count(chipIndex) && pixelStd[chipIndex] == 0)
-	 || (pixelBig.count(chipIndex) && pixelBig[chipIndex] == 0)) {
+	 || (pixelBig.count(chipIndex) && pixelBig[chipIndex] == 0) ||
+	 // ==========  StuckTBMs 
+	 (isChipStuck.at(chipIndex) == 1)){
+	//====================================================================
 	// make pixel amplitude =0, pixel will be lost at clusterization
 	i->second.set(0.); // reset amplitude,      
       } // end if
