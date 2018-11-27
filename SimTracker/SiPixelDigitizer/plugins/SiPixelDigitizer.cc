@@ -258,7 +258,11 @@ namespace cms
       firstFinalizeEvent_ = false;
     }
     _pixeldigialgo->calculateInstlumiFactor(PileupInfo_);   
-
+    
+    // ==========  StuckTBMs 
+    _pixeldigialgo->choose_snapshot(PileupInfo_);   
+    //===================================================
+    
     for( const auto& iu : pDD->detUnits()) {
       
       if(iu->type().isTrackerPixel()) {
