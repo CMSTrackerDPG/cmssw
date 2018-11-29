@@ -260,6 +260,7 @@ namespace cms
 
     // ==========  StuckTBMs 
     _pixeldigialgo->choose_snapshot(PileupInfo_.get());   
+
     //===================================================
     
     for( const auto& iu : pDD->detUnits()) {
