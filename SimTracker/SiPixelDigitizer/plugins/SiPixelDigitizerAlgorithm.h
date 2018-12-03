@@ -80,7 +80,7 @@ class SiPixelDigitizerAlgorithm  {
   // for premixing
   void calculateInstlumiFactor(const std::vector<PileupSummaryInfo> &ps, int bunchSpacing); // TODO: try to remove the duplication of logic...
   void setSimAccumulator(const std::map<uint32_t, std::map<int, int> >& signalMap);
-  void choose_snapshot(PileupMixingContent* puInfo);
+  void choose_snapshot(PileupMixingContent* puInfo, CLHEP::HepRandomEngine*);
  private:
   
   //Accessing Lorentz angle from DB:

@@ -851,7 +851,7 @@ void SiPixelDigitizerAlgorithm::calculateInstlumiFactor(const std::vector<Pileup
 }
 // ==========  StuckTBMs 
 
-void SiPixelDigitizerAlgorithm::choose_snapshot(PileupMixingContent* puInfo){
+void SiPixelDigitizerAlgorithm::choose_snapshot(PileupMixingContent* puInfo, CLHEP::HepRandomEngine* engine){
   //Determine snapshot to use for the current event based on pileup information
   
   if (puInfo) {
@@ -884,7 +884,7 @@ void SiPixelDigitizerAlgorithm::choose_snapshot(PileupMixingContent* puInfo){
       if (pileup_bin < pixelEfficiencies_.snapshotProbabilities_vsPU.size()-1){
       	int nbins = pixelEfficiencies_.snapshotProbabilities_vsPU.at(pileup_bin).size();      	
 	std::cout <<  "NBINS: " << nbins << std::endl;
-	CLHEP::RandGeneral rgen1(&((pixelEfficiencies_.snapshotProbabilities_vsPU.at(pileup_bin)).front()),nbins);	
+	CLHEP::RandGeneral rgen1(*engine, &((pixelEfficiencies_.snapshotProbabilities_vsPU.at(pileup_bin)).front()),nbins);	
 	double x = rgen1.shoot();
 	std::cout << "RND: "<< x << " "<< x*nbins<< " " << int(x*nbins) << std::endl;  
       	unsigned int index = x * nbins;

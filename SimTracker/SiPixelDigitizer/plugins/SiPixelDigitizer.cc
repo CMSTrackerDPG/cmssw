@@ -259,7 +259,7 @@ namespace cms
     _pixeldigialgo->calculateInstlumiFactor(PileupInfo_.get());
 
     // ==========  StuckTBMs 
-    _pixeldigialgo->choose_snapshot(PileupInfo_.get());   
+    _pixeldigialgo->choose_snapshot(PileupInfo_.get(), randomEngine_);   
     //===================================================
     
     for( const auto& iu : pDD->detUnits()) {
