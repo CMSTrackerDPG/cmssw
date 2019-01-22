@@ -39,6 +39,7 @@ def _modifyPixelDigitizerForPhase1Pixel( digitizer ) :
     
 
 SiPixelSimBlock = cms.PSet(
+    SiPixelQualityLabel = cms.string(''),
     KillBadFEDChannels = cms.bool(False),
     UseReweighting = cms.bool(False),
     PrintClusters = cms.bool(False),
