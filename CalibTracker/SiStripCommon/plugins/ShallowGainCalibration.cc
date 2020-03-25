@@ -1,7 +1,6 @@
 #include "CalibTracker/SiStripCommon/interface/ShallowGainCalibration.h"
 #include "CalibFormats/SiStripObjects/interface/SiStripGain.h"
 #include "CalibTracker/Records/interface/SiStripGainRcd.h"
-#include "RecoLocalTracker/SiStripClusterizer/interface/SiStripClusterInfo.h"
 
 using namespace edm;
 using namespace reco;
@@ -11,7 +10,8 @@ ShallowGainCalibration::ShallowGainCalibration(const edm::ParameterSet& iConfig)
     : tracks_token_(consumes<edm::View<reco::Track>>(iConfig.getParameter<edm::InputTag>("Tracks"))),
       association_token_(consumes<TrajTrackAssociationCollection>(iConfig.getParameter<edm::InputTag>("Tracks"))),
       Suffix(iConfig.getParameter<std::string>("Suffix")),
-      Prefix(iConfig.getParameter<std::string>("Prefix")) {
+      Prefix(iConfig.getParameter<std::string>("Prefix")),
+      siStripClusterInfo_(consumesCollector()) {
   produces<std::vector<int>>(Prefix + "trackindex" + Suffix);
   produces<std::vector<unsigned int>>(Prefix + "rawid" + Suffix);
   produces<std::vector<double>>(Prefix + "localdirx" + Suffix);
@@ -63,6 +63,8 @@ void ShallowGainCalibration::produce(edm::Event& iEvent, const edm::EventSetup& 
   iEvent.getByToken(tracks_token_, tracks);
   edm::Handle<TrajTrackAssociationCollection> associations;
   iEvent.getByToken(association_token_, associations);
+
+  siStripClusterInfo_.initEvent(iSetup);
 
   for (TrajTrackAssociationCollection::const_iterator association = associations->begin();
        association != associations->end();
@@ -178,8 +180,8 @@ void ShallowGainCalibration::produce(edm::Event& iEvent, const edm::EventSetup& 
           if (FirstStrip + Ampls.size() == 767)
             Overlapping = true;
 
-          const SiStripClusterInfo info(*StripCluster, iSetup, DetId);
-          Variance = info.variance();
+          siStripClusterInfo_.setCluster(*StripCluster, DetId);
+          Variance = siStripClusterInfo_.variance();
 
         } else if (PixelCluster) {
           const auto& Ampls = PixelCluster->pixelADC();

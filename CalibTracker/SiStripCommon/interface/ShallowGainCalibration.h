@@ -48,6 +48,8 @@
 #include "DataFormats/TrackReco/interface/DeDxHit.h"
 #include "DataFormats/TrackReco/interface/TrackDeDxHits.h"
 
+#include "RecoLocalTracker/SiStripClusterizer/interface/SiStripClusterInfo.h"
+
 #include <ext/hash_map>
 
 class ShallowGainCalibration : public edm::EDProducer {
@@ -60,6 +62,8 @@ private:
 
   std::string Suffix;
   std::string Prefix;
+
+  SiStripClusterInfo siStripClusterInfo_;
 
   void produce(edm::Event&, const edm::EventSetup&) override;
   //  virtual void beginJob(EventSetup const&);
