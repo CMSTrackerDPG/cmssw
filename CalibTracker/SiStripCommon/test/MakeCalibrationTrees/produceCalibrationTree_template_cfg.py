@@ -56,6 +56,10 @@ options.register('runNumber',
                  VarParsing.VarParsing.varType.int,
                  "run number to process (\"-1\" for all)")
 
+options.register('cosmicTriggers','',
+                 VarParsing.VarParsing.multiplicity.list,
+                 VarParsing.VarParsing.varType.string,
+                 'cosmic triggers')
 
 
 
@@ -154,6 +158,9 @@ process.eventInfo = cms.EDAnalyzer(
       )
 )
 
+if len(options.cosmicTriggers)>0:
+   print("cosmicTriggers    : ", options.cosmicTriggers)
+   process.IsolatedMuonFilter.triggerConditions = cms.vstring(options.cosmicTriggers)
 
 
 process.TkCalPath_StdBunch   = cms.Path(process.TkCalSeq_StdBunch   *process.shallowEventRun*process.eventInfo)
