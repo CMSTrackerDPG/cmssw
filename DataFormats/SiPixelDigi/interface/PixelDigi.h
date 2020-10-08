@@ -19,6 +19,7 @@ public:
   explicit PixelDigi(PackedDigiType packed_value) : theData(packed_value) {}
 
   PixelDigi(int row, int col, int adc) { init(row, col, adc); }
+  PixelDigi(int row, int col, int adc, int time) { init(row, col, adc, time); }
 
   PixelDigi(int chan, int adc) {
     std::pair<int, int> rc = channelToPixel(chan);
@@ -48,6 +49,29 @@ public:
               (adc << PixelChannelIdentifier::thePacking.adc_shift);
   }
 
+  void init(int row, int col, int adc, int time) {
+#ifdef FIXME_DEBUG
+    // This check is for the maximal row or col number that can be packed
+    // in a PixelDigi. The actual number of rows or columns in a detector
+    // may be smaller!
+    // it is done much better in Raw2Digi...
+    if (row < 0 || row > PixelChannelIdentifier::thePacking.max_row || col < 0 ||
+        col > PixelChannelIdentifier::thePacking.max_column) {
+      std::cout << "PixelDigi constructor: row or column out packing range " << row << ' ' << col << std::endl;
+    }
+#endif
+
+    // Set adc to max_adc in case of overflow
+    adc = (adc > PixelChannelIdentifier::thePacking.max_adc) ? PixelChannelIdentifier::thePacking.max_adc
+                                                             : std::max(adc, 0);
+
+    theData = (row << PixelChannelIdentifier::thePacking.row_shift) |
+      (col << PixelChannelIdentifier::thePacking.column_shift) |
+              (adc << PixelChannelIdentifier::thePacking.adc_shift) |
+              (time << PixelChannelIdentifier::thePacking.time_shift);
+  }
+
+  
   // Access to digi information
   int row() const {
     return (theData >> PixelChannelIdentifier::thePacking.row_shift) & PixelChannelIdentifier::thePacking.row_mask;
@@ -56,7 +80,7 @@ public:
     return (theData >> PixelChannelIdentifier::thePacking.column_shift) &
            PixelChannelIdentifier::thePacking.column_mask;
   }
-  //int time() const    {return (theData >> PixelChannelIdentifier::thePacking.time_shift) & PixelChannelIdentifier::thePacking.time_mask;}
+  int time() const    {return (theData >> PixelChannelIdentifier::thePacking.time_shift) & PixelChannelIdentifier::thePacking.time_mask;}
   unsigned short adc() const {
     return (theData >> PixelChannelIdentifier::thePacking.adc_shift) & PixelChannelIdentifier::thePacking.adc_mask;
   }
