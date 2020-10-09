@@ -10,10 +10,15 @@ from RecoLocalTracker.SiStripRecHitConverter.StripCPEfromTrackAngle_cfi import *
 from RecoLocalTracker.SiStripZeroSuppression.SiStripZeroSuppression_cfi import *
 from RecoLocalTracker.SiStripClusterizer.SiStripClusterizer_cfi import *
 from RecoLocalTracker.SiPixelClusterizer.SiPixelClusterizerPreSplitting_cfi import *
+from RecoLocalTracker.SiPixelDigiMorphing.SiPixelDigiMorphing_cfi import *
 from RecoLocalTracker.SiPixelRecHits.SiPixelRecHits_cfi import *
 from RecoLocalTracker.SubCollectionProducers.clustersummaryproducer_cfi import *
 
 pixeltrackerlocalrecoTask = cms.Task(siPixelClustersPreSplitting,siPixelRecHitsPreSplitting)
+pixeltrackerlocalrecoTask_withMorphing = cms.Task(siPixelDigisMorphed,siPixelClustersPreSplitting,siPixelRecHitsPreSplitting)
+from Configuration.ProcessModifiers.siPixelDigiMorphing_cff import *
+siPixelDigiMorphing.toReplaceWith(pixeltrackerlocalrecoTask,pixeltrackerlocalrecoTask_withMorphing)
+
 striptrackerlocalrecoTask = cms.Task(siStripZeroSuppression,siStripClusters,siStripMatchedRecHits)
 trackerlocalrecoTask = cms.Task(pixeltrackerlocalrecoTask,striptrackerlocalrecoTask,clusterSummaryProducer)
 
