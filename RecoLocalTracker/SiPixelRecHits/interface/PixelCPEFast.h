@@ -8,6 +8,7 @@
 #include "CondFormats/SiPixelTransient/interface/SiPixelTemplate.h"
 #include "HeterogeneousCore/CUDACore/interface/ESProduct.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/HostAllocator.h"
+
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEBase.h"
 #include "RecoLocalTracker/SiPixelRecHits/interface/pixelCPEforGPU.h"
 
