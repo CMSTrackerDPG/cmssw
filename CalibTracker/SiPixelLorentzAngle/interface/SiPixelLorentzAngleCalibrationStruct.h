@@ -12,6 +12,9 @@ public:
 
   int nlay;
   std::vector<int> nModules_;
+  std::vector<int> newDetIds_;
+  std::vector<int> newModule_;
+  std::vector<int> newLayer_;
   std::map<uint32_t, std::vector<uint32_t> > detIdsList;
 
   MonitorMap h_drift_depth_adc_;
