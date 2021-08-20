@@ -242,18 +242,20 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
 
   SiPixelLorentzAngle* LorentzAngle = new SiPixelLorentzAngle();
 
+  TF1* f1 = new TF1("f1", "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + [5]*x*x*x*x*x", 5., 280.);
+  f1->SetParName(0, "offset");
+  f1->SetParName(1, "tan#theta_{LA}");
+  f1->SetParName(2, "quad term");
+  f1->SetParName(3, "cubic term");
+  f1->SetParName(4, "quartic term");
+  f1->SetParName(5, "quintic term");
+
   for (int j = 0; j < (int)hists.newDetIds_.size(); j++) {
     int new_index = j + 1 + hists.nModules_[hists.nlay - 1] + (hists.nlay - 1) * hists.nModules_[hists.nlay - 1];
     for (int i = 1; i <= hist_depth_; i++) {
       findMean(h_drift_depth_adc_slice_, i, new_index);
     }
-    TF1* f1 = new TF1("f1", "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + [5]*x*x*x*x*x", 5., 280.);
-    f1->SetParName(0, "offset");
-    f1->SetParName(1, "tan#theta_{LA}");
-    f1->SetParName(2, "quad term");
-    f1->SetParName(3, "cubic term");
-    f1->SetParName(4, "quartic term");
-    f1->SetParName(5, "quintic term");
+
     f1->SetParameter(0, 0);
     f1->SetParameter(1, 0.4);
     f1->SetParameter(2, 0.0);
@@ -282,8 +284,6 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
               << "\t" << p1 << std::setprecision(3) << "\t" << e1 << "\t" << e1 / p1 * 100. << "\t" << (p1 - 0.424) / e1
               << "\t" << p2 << "\t" << e2 << "\t" << p3 << "\t" << e3 << "\t" << p4 << "\t" << e4 << "\t" << p5 << "\t"
               << e5 << "\t" << chi2 << "\t" << prob << "\t" << hists.newDetIds_[j] << std::endl;
-
-    delete f1;
   }
 
   //loop over modlues and layers to fit the lorentz angle
@@ -295,13 +295,6 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
         findMean(h_drift_depth_adc_slice_, i, i_index);
       }  // end loop over bins in depth
 
-      TF1* f1 = new TF1("f1", "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + [5]*x*x*x*x*x", 5., 280.);
-      f1->SetParName(0, "offset");
-      f1->SetParName(1, "tan#theta_{LA}");
-      f1->SetParName(2, "quad term");
-      f1->SetParName(3, "cubic term");
-      f1->SetParName(4, "quartic term");
-      f1->SetParName(5, "quintic term");
       f1->SetParameter(0, 0);
       f1->SetParameter(1, 0.4);
       f1->SetParameter(2, 0.0);
@@ -331,7 +324,6 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
                 << "null" << std::endl;
 
       const auto& detIdsToFill = hists.detIdsList.at(i_index);
-      delete f1;
 
       /*
       std::cout << i_index << " ";
@@ -363,6 +355,8 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
       }
     }
   }  // end loop over modules and layers
+
+  delete f1;
 
   // fill the rest of DetIds not filled above (for the moment FPix)
   const auto& currentLAMap = currentLorentzAngle->getLorentzAngles();
