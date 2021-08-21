@@ -844,7 +844,8 @@ void SiPixelLorentzAnglePCLWorker::fillDescriptions(edm::ConfigurationDescriptio
   desc.add<std::string>("folder", "AlCaReco/SiPixelLorentzAngle");
   desc.add<bool>("notInPCL", false);
   desc.add<std::string>("fileName", "testrun.root");
-  desc.add<std::vector<std::string>>("newmodulelist", {"BPix_BmO_SEC3_LYR2_LDR5_MOD2", "BPix_BpO_SEC1_LYR2_LDR1_MOD1"});
+  desc.add<std::vector<std::string>>("newmodulelist",
+                                     {"BPix_BmO_SEC3_LYR2_LDR5F_MOD2", "BPix_BpO_SEC1_LYR2_LDR1F_MOD1"});
   desc.add<edm::InputTag>("src", edm::InputTag("TrackRefitter"));
   desc.add<double>("ptMin", 3.);
   desc.add<double>("normChi2Max", 2.);

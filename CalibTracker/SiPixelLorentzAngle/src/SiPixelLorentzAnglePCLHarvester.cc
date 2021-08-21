@@ -472,7 +472,8 @@ void SiPixelLorentzAnglePCLHarvester::findMean(MonitorElement* h_drift_depth_adc
 //------------------------------------------------------------------------------
 void SiPixelLorentzAnglePCLHarvester::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<std::vector<std::string>>("newmodulelist", {"BPix_BmO_SEC3_LYR2_LDR5_MOD2", "BPix_BpO_SEC1_LYR2_LDR1_MOD1"});
+  desc.add<std::vector<std::string>>("newmodulelist",
+                                     {"BPix_BmO_SEC3_LYR2_LDR5F_MOD2", "BPix_BpO_SEC1_LYR2_LDR1F_MOD1"});
   desc.add<std::string>("dqmDir", "AlCaReco/SiPixelLorentzAngle");
   desc.add<double>("fitProbCut", 0.5);
   desc.add<std::string>("record", "SiPixelLorentzAngleRcd");
