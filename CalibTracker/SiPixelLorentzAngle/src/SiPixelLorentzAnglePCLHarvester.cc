@@ -42,6 +42,7 @@ private:
   const std::string dqmDir_;
   const double fitProbCut_;
   const std::string recordName_;
+  std::unique_ptr<TF1> f1;
 
   SiPixelLorentzAngleCalibrationHistograms hists;
   const SiPixelLorentzAngle* currentLorentzAngle;
@@ -240,7 +241,7 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
 
   SiPixelLorentzAngle* LorentzAngle = new SiPixelLorentzAngle();
 
-  TF1* f1 = new TF1("f1", "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + [5]*x*x*x*x*x", 5., 280.);
+  f1 = std::make_unique<TF1>("f1", "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + [5]*x*x*x*x*x", 5., 280.);
   f1->SetParName(0, "offset");
   f1->SetParName(1, "tan#theta_{LA}");
   f1->SetParName(2, "quad term");
@@ -255,13 +256,20 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
     }
 
     f1->SetParameter(0, 0);
+    f1->SetParError(0, 0);
     f1->SetParameter(1, 0.4);
+    f1->SetParError(1, 0);
     f1->SetParameter(2, 0.0);
+    f1->SetParError(2, 0);
     f1->SetParameter(3, 0.0);
+    f1->SetParError(3, 0);
     f1->SetParameter(4, 0.0);
+    f1->SetParError(4, 0);
     f1->SetParameter(5, 0.0);
+    f1->SetParError(5, 0);
+    f1->SetChisquare(0);
 
-    hists.h_mean_[new_index]->getTH1()->Fit(f1, "ERQ");
+    hists.h_mean_[new_index]->getTH1()->Fit(f1.get(), "ERQ");
 
     double p0 = f1->GetParameter(0);
     double e0 = f1->GetParError(0);
@@ -295,13 +303,20 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
       }  // end loop over bins in depth
 
       f1->SetParameter(0, 0);
+      f1->SetParError(0, 0);
       f1->SetParameter(1, 0.4);
+      f1->SetParError(1, 0);
       f1->SetParameter(2, 0.0);
+      f1->SetParError(2, 0);
       f1->SetParameter(3, 0.0);
+      f1->SetParError(3, 0);
       f1->SetParameter(4, 0.0);
+      f1->SetParError(4, 0);
       f1->SetParameter(5, 0.0);
+      f1->SetParError(5, 0);
+      f1->SetChisquare(0);
 
-      hists.h_mean_[i_index]->getTH1()->Fit(f1, "ERQ");
+      hists.h_mean_[i_index]->getTH1()->Fit(f1.get(), "ERQ");
       double p0 = f1->GetParameter(0);
       double e0 = f1->GetParError(0);
       double p1 = f1->GetParameter(1);
@@ -356,8 +371,6 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
       }
     }
   }  // end loop over modules and layers
-
-  delete f1;
 
   // fill the rest of DetIds not filled above (for the moment FPix)
   const auto& currentLAMap = currentLorentzAngle->getLorentzAngles();
