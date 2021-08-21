@@ -38,7 +38,7 @@ private:
   edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> topoEsToken_;
   edm::ESGetToken<SiPixelLorentzAngle, SiPixelLorentzAngleRcd> siPixelLAEsToken_;
 
-  std::string newmodulelist_;
+  std::vector<std::string> newmodulelist_;
   const std::string dqmDir_;
   const double fitProbCut_;
   const std::string recordName_;
@@ -53,7 +53,7 @@ SiPixelLorentzAnglePCLHarvester::SiPixelLorentzAnglePCLHarvester(const edm::Para
     : geomEsToken_(esConsumes<edm::Transition::BeginRun>()),
       topoEsToken_(esConsumes<edm::Transition::BeginRun>()),
       siPixelLAEsToken_(esConsumes<edm::Transition::BeginRun>()),
-      newmodulelist_(iConfig.getParameter<std::string>("newmodulelist")),
+      newmodulelist_(iConfig.getParameter<std::vector<std::string>>("newmodulelist")),
       dqmDir_(iConfig.getParameter<std::string>("dqmDir")),
       fitProbCut_(iConfig.getParameter<double>("fitProbCut")),
       recordName_(iConfig.getParameter<std::string>("record")) {
@@ -79,12 +79,10 @@ void SiPixelLorentzAnglePCLHarvester::beginRun(const edm::Run& iRun, const edm::
     hists.nModules_[i] = map.getPXBModules(i + 1);
   }
 
+  std::string modulename;
   if (!newmodulelist_.empty()) {
-    std::ifstream DetidFile(newmodulelist_.c_str());
-    std::string Line;
-    while (std::getline(DetidFile, Line)) {
-      char modulename[100];
-      sscanf(Line.c_str(), "%s", modulename);
+    for (auto const& string : newmodulelist_) {
+      modulename = string;
       PixelBarrelNameUpgrade bn(modulename);
       hists.newDetIds_.push_back(bn.getDetId());
       hists.newModule_.push_back(bn.moduleName());
@@ -202,43 +200,43 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
   MonitorElement* h_drift_depth_adc_slice_ =
       iBooker.book1D("h_drift_depth_adc_slice", "slice of adc histogram", hist_drift_, min_drift_, max_drift_);
 
-  std::cout << "module"
-            << "\t"
-            << "layer"
-            << "\t"
-            << "offset"
-            << "\t"
-            << "e0"
-            << "\t"
-            << "slope"
-            << "\t"
-            << "e1"
-            << "\t"
-               "rel.err"
-            << "\t"
-               "pull"
-            << "\t"
-            << "p2"
-            << "\t"
-            << "e2"
-            << "\t"
-            << "p3"
-            << "\t"
-            << "e3"
-            << "\t"
-            << "p4"
-            << "\t"
-            << "e4"
-            << "\t"
-            << "p5"
-            << "\t"
-            << "e5"
-            << "\t"
-            << "chi2"
-            << "\t"
-            << "prob"
-            << "\t"
-            << "newDetId" << std::endl;
+  edm::LogPrint("LorentzAngle") << "module"
+                                << "\t"
+                                << "layer"
+                                << "\t"
+                                << "offset"
+                                << "\t"
+                                << "e0"
+                                << "\t"
+                                << "slope"
+                                << "\t"
+                                << "e1"
+                                << "\t"
+                                   "rel.err"
+                                << "\t"
+                                   "pull"
+                                << "\t"
+                                << "p2"
+                                << "\t"
+                                << "e2"
+                                << "\t"
+                                << "p3"
+                                << "\t"
+                                << "e3"
+                                << "\t"
+                                << "p4"
+                                << "\t"
+                                << "e4"
+                                << "\t"
+                                << "p5"
+                                << "\t"
+                                << "e5"
+                                << "\t"
+                                << "chi2"
+                                << "\t"
+                                << "prob"
+                                << "\t"
+                                << "newDetId" << std::endl;
 
   SiPixelLorentzAngle* LorentzAngle = new SiPixelLorentzAngle();
 
@@ -280,10 +278,11 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
     double chi2 = f1->GetChisquare();
     double prob = f1->GetProb();
 
-    std::cout << std::setprecision(4) << hists.newModule_[j] << "\t" << hists.newLayer_[j] << "\t" << p0 << "\t" << e0
-              << "\t" << p1 << std::setprecision(3) << "\t" << e1 << "\t" << e1 / p1 * 100. << "\t" << (p1 - 0.424) / e1
-              << "\t" << p2 << "\t" << e2 << "\t" << p3 << "\t" << e3 << "\t" << p4 << "\t" << e4 << "\t" << p5 << "\t"
-              << e5 << "\t" << chi2 << "\t" << prob << "\t" << hists.newDetIds_[j] << std::endl;
+    edm::LogPrint("LorentzAngle") << std::setprecision(4) << hists.newModule_[j] << "\t" << hists.newLayer_[j] << "\t"
+                                  << p0 << "\t" << e0 << "\t" << p1 << std::setprecision(3) << "\t" << e1 << "\t"
+                                  << e1 / p1 * 100. << "\t" << (p1 - 0.424) / e1 << "\t" << p2 << "\t" << e2 << "\t"
+                                  << p3 << "\t" << e3 << "\t" << p4 << "\t" << e4 << "\t" << p5 << "\t" << e5 << "\t"
+                                  << chi2 << "\t" << prob << "\t" << hists.newDetIds_[j] << std::endl;
   }
 
   //loop over modlues and layers to fit the lorentz angle
@@ -317,11 +316,13 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
       double e5 = f1->GetParError(5);
       double chi2 = f1->GetChisquare();
       double prob = f1->GetProb();
-      std::cout << std::setprecision(4) << i_module << "\t" << i_layer << "\t" << p0 << "\t" << e0 << "\t" << p1
-                << std::setprecision(3) << "\t" << e1 << "\t" << e1 / p1 * 100. << "\t" << (p1 - 0.424) / e1 << "\t"
-                << p2 << "\t" << e2 << "\t" << p3 << "\t" << e3 << "\t" << p4 << "\t" << e4 << "\t" << p5 << "\t" << e5
-                << "\t" << chi2 << "\t" << prob << "\t"
-                << "null" << std::endl;
+
+      edm::LogPrint("LorentzAngle") << std::setprecision(4) << i_module << "\t" << i_layer << "\t" << p0 << "\t" << e0
+                                    << "\t" << p1 << std::setprecision(3) << "\t" << e1 << "\t" << e1 / p1 * 100.
+                                    << "\t" << (p1 - 0.424) / e1 << "\t" << p2 << "\t" << e2 << "\t" << p3 << "\t" << e3
+                                    << "\t" << p4 << "\t" << e4 << "\t" << p5 << "\t" << e5 << "\t" << chi2 << "\t"
+                                    << prob << "\t"
+                                    << "null" << std::endl;
 
       const auto& detIdsToFill = hists.detIdsList.at(i_index);
 
@@ -458,7 +459,7 @@ void SiPixelLorentzAnglePCLHarvester::findMean(MonitorElement* h_drift_depth_adc
 //------------------------------------------------------------------------------
 void SiPixelLorentzAnglePCLHarvester::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<std::string>("newmodulelist", "newmodule.txt");
+  desc.add<std::vector<std::string>>("newmodulelist", {"BPix_BmO_SEC3_LYR2_LDR5_MOD2", "BPix_BpO_SEC1_LYR2_LDR1_MOD1"});
   desc.add<std::string>("dqmDir", "AlCaReco/SiPixelLorentzAngle");
   desc.add<double>("fitProbCut", 0.5);
   desc.add<std::string>("record", "SiPixelLorentzAngleRcd");

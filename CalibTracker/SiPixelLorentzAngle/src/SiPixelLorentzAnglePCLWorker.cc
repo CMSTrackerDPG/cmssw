@@ -125,7 +125,7 @@ private:
   std::string folder_;
   bool notInPCL_;
   std::string filename_;
-  std::string newmodulelist_;
+  std::vector<std::string> newmodulelist_;
 
   // histogram etc
   int hist_x_;
@@ -229,7 +229,7 @@ SiPixelLorentzAnglePCLWorker::SiPixelLorentzAnglePCLWorker(const edm::ParameterS
     : folder_(iConfig.getParameter<std::string>("folder")),
       notInPCL_(iConfig.getParameter<bool>("notInPCL")),
       filename_(iConfig.getParameter<std::string>("fileName")),
-      newmodulelist_(iConfig.getParameter<std::string>("newmodulelist")),
+      newmodulelist_(iConfig.getParameter<std::vector<std::string>>("newmodulelist")),
       ptmin_(iConfig.getParameter<double>("ptMin")),
       normChi2Max_(iConfig.getParameter<double>("normChi2Max")),
       clustSizeYMin_(iConfig.getParameter<int>("clustSizeYMin")),
@@ -705,12 +705,10 @@ void SiPixelLorentzAnglePCLWorker::dqmBeginRun(edm::Run const& run,
     iHists.nModules_[i] = map.getPXBModules(i + 1);
   }
 
+  std::string modulename;
   if (!newmodulelist_.empty()) {
-    std::ifstream DetidFile(newmodulelist_.c_str());
-    std::string Line;
-    while (std::getline(DetidFile, Line)) {
-      char modulename[100];
-      sscanf(Line.c_str(), "%s", modulename);
+    for (auto const& string : newmodulelist_) {
+      modulename = string;
       PixelBarrelNameUpgrade bn(modulename);
       iHists.newDetIds_.push_back(bn.getDetId());
       iHists.newModule_.push_back(bn.moduleName());
@@ -846,7 +844,7 @@ void SiPixelLorentzAnglePCLWorker::fillDescriptions(edm::ConfigurationDescriptio
   desc.add<std::string>("folder", "AlCaReco/SiPixelLorentzAngle");
   desc.add<bool>("notInPCL", false);
   desc.add<std::string>("fileName", "testrun.root");
-  desc.add<std::string>("newmodulelist", "newmodule.txt");
+  desc.add<std::vector<std::string>>("newmodulelist", {"BPix_BmO_SEC3_LYR2_LDR5_MOD2", "BPix_BpO_SEC1_LYR2_LDR1_MOD1"});
   desc.add<edm::InputTag>("src", edm::InputTag("TrackRefitter"));
   desc.add<double>("ptMin", 3.);
   desc.add<double>("normChi2Max", 2.);
