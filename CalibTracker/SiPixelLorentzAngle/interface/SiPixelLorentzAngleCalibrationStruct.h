@@ -12,9 +12,12 @@ public:
 
   int nlay;
   std::vector<int> nModules_;
-  std::vector<int> newDetIds_;
-  std::vector<int> newModule_;
-  std::vector<int> newLayer_;
+  std::vector<int> BPixnewDetIds_;
+  std::vector<int> BPixnewModule_;
+  std::vector<int> BPixnewLayer_;
+  std::vector<int> FPixnewDetIds_;
+  std::vector<int> FPixnewDisk_;
+  std::vector<int> FPixnewBlade_;
   std::map<uint32_t, std::vector<uint32_t> > detIdsList;
 
   MonitorMap h_drift_depth_adc_;

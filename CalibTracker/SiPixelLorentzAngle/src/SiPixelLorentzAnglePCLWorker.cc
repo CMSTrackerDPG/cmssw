@@ -38,8 +38,8 @@
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
-#include "DataFormats/SiPixelDetId/interface/PixelBarrelNameUpgrade.h"
-
+#include "DataFormats/TrackerCommon/interface/PixelBarrelName.h"
+#include "DataFormats/TrackerCommon/interface/PixelEndcapName.h"
 #include "TrackingTools/Records/interface/TransientRecHitRecord.h"
 #include "TrackingTools/TrackFitters/interface/TrajectoryStateCombiner.h"
 #include "TrackingTools/PatternTools/interface/TrajTrackAssociation.h"
@@ -505,8 +505,8 @@ void SiPixelLorentzAnglePCLWorker::dqmAnalyze(edm::Event const& iEvent,
           auto detId = detIdObj.rawId();
           bool Isnew = false;
           int DetId_index = -1;
-          for (int i = 0; i < (int)iHists.newDetIds_.size(); i++) {
-            if (detId == (unsigned int)iHists.newDetIds_[i])
+          for (int i = 0; i < (int)iHists.BPixnewDetIds_.size(); i++) {
+            if (detId == (unsigned int)iHists.BPixnewDetIds_[i])
               Isnew = true;
             DetId_index = i;
           }
@@ -705,14 +705,21 @@ void SiPixelLorentzAnglePCLWorker::dqmBeginRun(edm::Run const& run,
     iHists.nModules_[i] = map.getPXBModules(i + 1);
   }
 
-  std::string modulename;
   if (!newmodulelist_.empty()) {
-    for (auto const& string : newmodulelist_) {
-      modulename = string;
-      PixelBarrelNameUpgrade bn(modulename);
-      iHists.newDetIds_.push_back(bn.getDetId());
-      iHists.newModule_.push_back(bn.moduleName());
-      iHists.newLayer_.push_back(bn.layerName());
+    for (auto const& modulename : newmodulelist_) {
+      if (modulename.find("BPix_") != std::string::npos) {
+        PixelBarrelName bn(modulename, true);
+        const auto& detId = bn.getDetId(tTopo);
+        iHists.BPixnewDetIds_.push_back(detId.rawId());
+        iHists.BPixnewModule_.push_back(bn.moduleName());
+        iHists.BPixnewLayer_.push_back(bn.layerName());
+      } else if (modulename.find("FPix_") != std::string::npos) {
+        PixelEndcapName en(modulename, true);
+        const auto& detId = en.getDetId(tTopo);
+        iHists.FPixnewDetIds_.push_back(detId.rawId());
+        iHists.FPixnewDisk_.push_back(en.diskName());
+        iHists.FPixnewBlade_.push_back(en.bladeName());
+      }
     }
   }
 }
@@ -751,43 +758,46 @@ void SiPixelLorentzAnglePCLWorker::bookHistograms(DQMStore::IBooker& iBooker,
     }
   }
 
-  for (int i = 0; i < (int)iHists.newDetIds_.size(); i++) {
+  for (int i = 0; i < (int)iHists.BPixnewDetIds_.size(); i++) {
     int new_index = iHists.nModules_[iHists.nlay - 1] + (iHists.nlay - 1) * iHists.nModules_[iHists.nlay - 1] + 1 + i;
 
     sprintf(name,
-            "h_new_drift_depth_adc_detid_%i_layer%i_module%i",
-            iHists.newDetIds_[i],
-            iHists.newLayer_[i],
-            iHists.newModule_[i]);
+            "h_BPixnew_drift_depth_adc_detid_%i_layer%i_module%i",
+            iHists.BPixnewDetIds_[i],
+            iHists.BPixnewLayer_[i],
+            iHists.BPixnewModule_[i]);
     iHists.h_drift_depth_adc_[new_index] =
         iBooker.book2D(name, name, hist_drift_, min_drift_, max_drift_, hist_depth_, min_depth_, max_depth_);
 
     sprintf(name,
-            "h_new_drift_depth_adc2_detid_%i_layer%i_module%i",
-            iHists.newDetIds_[i],
-            iHists.newLayer_[i],
-            iHists.newModule_[i]);
+            "h_BPixnew_drift_depth_adc2_detid_%i_layer%i_module%i",
+            iHists.BPixnewDetIds_[i],
+            iHists.BPixnewLayer_[i],
+            iHists.BPixnewModule_[i]);
     iHists.h_drift_depth_adc2_[new_index] =
         iBooker.book2D(name, name, hist_drift_, min_drift_, max_drift_, hist_depth_, min_depth_, max_depth_);
 
     sprintf(name,
-            "h_new_drift_depth_noadc_detid_%i_layer%i_module%i",
-            iHists.newDetIds_[i],
-            iHists.newLayer_[i],
-            iHists.newModule_[i]);
+            "h_BPixnew_drift_depth_noadc_detid_%i_layer%i_module%i",
+            iHists.BPixnewDetIds_[i],
+            iHists.BPixnewLayer_[i],
+            iHists.BPixnewModule_[i]);
     iHists.h_drift_depth_noadc_[new_index] =
         iBooker.book2D(name, name, hist_drift_, min_drift_, max_drift_, hist_depth_, min_depth_, max_depth_);
 
     sprintf(name,
-            "h_new_drift_depth_detid_%i_layer%i_module%i",
-            iHists.newDetIds_[i],
-            iHists.newLayer_[i],
-            iHists.newModule_[i]);
+            "h_BPixnew_drift_depth_detid_%i_layer%i_module%i",
+            iHists.BPixnewDetIds_[i],
+            iHists.BPixnewLayer_[i],
+            iHists.BPixnewModule_[i]);
     iHists.h_drift_depth_[new_index] =
         iBooker.book2D(name, name, hist_drift_, min_drift_, max_drift_, hist_depth_, min_depth_, max_depth_);
 
-    sprintf(
-        name, "h_new_mean_detid_%i_layer%i_module%i", iHists.newDetIds_[i], iHists.newLayer_[i], iHists.newModule_[i]);
+    sprintf(name,
+            "h_BPixnew_mean_detid_%i_layer%i_module%i",
+            iHists.BPixnewDetIds_[i],
+            iHists.BPixnewLayer_[i],
+            iHists.BPixnewModule_[i]);
     iHists.h_mean_[new_index] = iBooker.book1D(name, name, hist_depth_, min_depth_, max_depth_);
   }
 }

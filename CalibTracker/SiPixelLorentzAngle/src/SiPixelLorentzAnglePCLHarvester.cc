@@ -6,7 +6,8 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
-#include "DataFormats/SiPixelDetId/interface/PixelBarrelNameUpgrade.h"
+#include "DataFormats/TrackerCommon/interface/PixelBarrelName.h"
+#include "DataFormats/TrackerCommon/interface/PixelEndcapName.h"
 #include "Geometry/TrackerGeometryBuilder/interface/PixelTopologyMap.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 
@@ -80,14 +81,21 @@ void SiPixelLorentzAnglePCLHarvester::beginRun(const edm::Run& iRun, const edm::
     hists.nModules_[i] = map.getPXBModules(i + 1);
   }
 
-  std::string modulename;
   if (!newmodulelist_.empty()) {
-    for (auto const& string : newmodulelist_) {
-      modulename = string;
-      PixelBarrelNameUpgrade bn(modulename);
-      hists.newDetIds_.push_back(bn.getDetId());
-      hists.newModule_.push_back(bn.moduleName());
-      hists.newLayer_.push_back(bn.layerName());
+    for (auto const& modulename : newmodulelist_) {
+      if (modulename.find("BPix_") != std::string::npos) {
+        PixelBarrelName bn(modulename, true);
+        const auto& detId = bn.getDetId(tTopo);
+        hists.BPixnewDetIds_.push_back(detId.rawId());
+        hists.BPixnewModule_.push_back(bn.moduleName());
+        hists.BPixnewLayer_.push_back(bn.layerName());
+      } else if (modulename.find("FPix_") != std::string::npos) {
+        PixelEndcapName en(modulename, true);
+        const auto& detId = en.getDetId(tTopo);
+        hists.FPixnewDetIds_.push_back(detId.rawId());
+        hists.FPixnewDisk_.push_back(en.diskName());
+        hists.FPixnewBlade_.push_back(en.bladeName());
+      }
     }
   }
 
@@ -148,39 +156,41 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
     }
   }
 
-  for (int i = 0; i < (int)hists.newDetIds_.size(); i++) {
+  for (int i = 0; i < (int)hists.BPixnewDetIds_.size(); i++) {
     int new_index = i + 1 + hists.nModules_[hists.nlay - 1] + (hists.nlay - 1) * hists.nModules_[hists.nlay - 1];
 
-    hists.h_drift_depth_adc_[new_index] = iGetter.get(fmt::format("{}/h_new_drift_depth_detid_{}_layer{}_module{}",
+    hists.h_drift_depth_adc_[new_index] = iGetter.get(fmt::format("{}/h_BPixnew_drift_depth_detid_{}_layer{}_module{}",
                                                                   dqmDir_,
-                                                                  hists.newDetIds_[i],
-                                                                  hists.newLayer_[i],
-                                                                  hists.newModule_[i]));
+                                                                  hists.BPixnewDetIds_[i],
+                                                                  hists.BPixnewLayer_[i],
+                                                                  hists.BPixnewModule_[i]));
 
-    hists.h_drift_depth_adc2_[new_index] = iGetter.get(fmt::format("{}/h_new_drift_depth_adc_detid_{}_layer{}_module{}",
-                                                                   dqmDir_,
-                                                                   hists.newDetIds_[i],
-                                                                   hists.newLayer_[i],
-                                                                   hists.newModule_[i]));
+    hists.h_drift_depth_adc2_[new_index] =
+        iGetter.get(fmt::format("{}/h_BPixnew_drift_depth_adc_detid_{}_layer{}_module{}",
+                                dqmDir_,
+                                hists.BPixnewDetIds_[i],
+                                hists.BPixnewLayer_[i],
+                                hists.BPixnewModule_[i]));
 
     hists.h_drift_depth_noadc_[new_index] =
-        iGetter.get(fmt::format("{}/h_new_drift_depth_adc2_detid_{}_layer{}_module{}",
+        iGetter.get(fmt::format("{}/h_BPixnew_drift_depth_adc2_detid_{}_layer{}_module{}",
                                 dqmDir_,
-                                hists.newDetIds_[i],
-                                hists.newLayer_[i],
-                                hists.newModule_[i]));
+                                hists.BPixnewDetIds_[i],
+                                hists.BPixnewLayer_[i],
+                                hists.BPixnewModule_[i]));
 
-    hists.h_drift_depth_[new_index] = iGetter.get(fmt::format("{}/h_new_drift_depth_noadc_detid_{}_layer{}_module{}",
-                                                              dqmDir_,
-                                                              hists.newDetIds_[i],
-                                                              hists.newLayer_[i],
-                                                              hists.newModule_[i]));
+    hists.h_drift_depth_[new_index] =
+        iGetter.get(fmt::format("{}/h_BPixnew_drift_depth_noadc_detid_{}_layer{}_module{}",
+                                dqmDir_,
+                                hists.BPixnewDetIds_[i],
+                                hists.BPixnewLayer_[i],
+                                hists.BPixnewModule_[i]));
 
-    hists.h_mean_[new_index] = iGetter.get(fmt::format("{}/h_new_mean_detid_{}_layer{}_module{}",
+    hists.h_mean_[new_index] = iGetter.get(fmt::format("{}/h_BPixnew_mean_detid_{}_layer{}_module{}",
                                                        dqmDir_,
-                                                       hists.newDetIds_[i],
-                                                       hists.newLayer_[i],
-                                                       hists.newModule_[i]));
+                                                       hists.BPixnewDetIds_[i],
+                                                       hists.BPixnewLayer_[i],
+                                                       hists.BPixnewModule_[i]));
 
     hists.h_drift_depth_[new_index]->divide(
         hists.h_drift_depth_adc_[new_index], hists.h_drift_depth_noadc_[new_index], 1., 1., "");
@@ -249,7 +259,7 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
   f1->SetParName(4, "quartic term");
   f1->SetParName(5, "quintic term");
 
-  for (int j = 0; j < (int)hists.newDetIds_.size(); j++) {
+  for (int j = 0; j < (int)hists.BPixnewDetIds_.size(); j++) {
     int new_index = j + 1 + hists.nModules_[hists.nlay - 1] + (hists.nlay - 1) * hists.nModules_[hists.nlay - 1];
     for (int i = 1; i <= hist_depth_; i++) {
       findMean(h_drift_depth_adc_slice_, i, new_index);
@@ -286,11 +296,11 @@ void SiPixelLorentzAnglePCLHarvester::dqmEndJob(DQMStore::IBooker& iBooker, DQMS
     double chi2 = f1->GetChisquare();
     double prob = f1->GetProb();
 
-    edm::LogPrint("LorentzAngle") << std::setprecision(4) << hists.newModule_[j] << "\t" << hists.newLayer_[j] << "\t"
-                                  << p0 << "\t" << e0 << "\t" << p1 << std::setprecision(3) << "\t" << e1 << "\t"
-                                  << e1 / p1 * 100. << "\t" << (p1 - 0.424) / e1 << "\t" << p2 << "\t" << e2 << "\t"
-                                  << p3 << "\t" << e3 << "\t" << p4 << "\t" << e4 << "\t" << p5 << "\t" << e5 << "\t"
-                                  << chi2 << "\t" << prob << "\t" << hists.newDetIds_[j] << std::endl;
+    edm::LogPrint("LorentzAngle") << std::setprecision(4) << hists.BPixnewModule_[j] << "\t" << hists.BPixnewLayer_[j]
+                                  << "\t" << p0 << "\t" << e0 << "\t" << p1 << std::setprecision(3) << "\t" << e1
+                                  << "\t" << e1 / p1 * 100. << "\t" << (p1 - 0.424) / e1 << "\t" << p2 << "\t" << e2
+                                  << "\t" << p3 << "\t" << e3 << "\t" << p4 << "\t" << e4 << "\t" << p5 << "\t" << e5
+                                  << "\t" << chi2 << "\t" << prob << "\t" << hists.BPixnewDetIds_[j] << std::endl;
   }
 
   //loop over modlues and layers to fit the lorentz angle
