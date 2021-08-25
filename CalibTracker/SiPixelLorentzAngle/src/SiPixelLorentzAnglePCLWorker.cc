@@ -710,12 +710,14 @@ void SiPixelLorentzAnglePCLWorker::dqmBeginRun(edm::Run const& run,
       if (modulename.find("BPix_") != std::string::npos) {
         PixelBarrelName bn(modulename, true);
         const auto& detId = bn.getDetId(tTopo);
+        iHists.BPixnewmodulename_.push_back(modulename);
         iHists.BPixnewDetIds_.push_back(detId.rawId());
         iHists.BPixnewModule_.push_back(bn.moduleName());
         iHists.BPixnewLayer_.push_back(bn.layerName());
       } else if (modulename.find("FPix_") != std::string::npos) {
         PixelEndcapName en(modulename, true);
         const auto& detId = en.getDetId(tTopo);
+        iHists.FPixnewmodulename_.push_back(modulename);
         iHists.FPixnewDetIds_.push_back(detId.rawId());
         iHists.FPixnewDisk_.push_back(en.diskName());
         iHists.FPixnewBlade_.push_back(en.bladeName());
@@ -761,43 +763,23 @@ void SiPixelLorentzAnglePCLWorker::bookHistograms(DQMStore::IBooker& iBooker,
   for (int i = 0; i < (int)iHists.BPixnewDetIds_.size(); i++) {
     int new_index = iHists.nModules_[iHists.nlay - 1] + (iHists.nlay - 1) * iHists.nModules_[iHists.nlay - 1] + 1 + i;
 
-    sprintf(name,
-            "h_BPixnew_drift_depth_adc_detid_%i_layer%i_module%i",
-            iHists.BPixnewDetIds_[i],
-            iHists.BPixnewLayer_[i],
-            iHists.BPixnewModule_[i]);
+    sprintf(name, "h_BPixnew_drift_depth_adc_%s", iHists.BPixnewmodulename_[i].c_str());
     iHists.h_drift_depth_adc_[new_index] =
         iBooker.book2D(name, name, hist_drift_, min_drift_, max_drift_, hist_depth_, min_depth_, max_depth_);
 
-    sprintf(name,
-            "h_BPixnew_drift_depth_adc2_detid_%i_layer%i_module%i",
-            iHists.BPixnewDetIds_[i],
-            iHists.BPixnewLayer_[i],
-            iHists.BPixnewModule_[i]);
+    sprintf(name, "h_BPixnew_drift_depth_adc2_%s", iHists.BPixnewmodulename_[i].c_str());
     iHists.h_drift_depth_adc2_[new_index] =
         iBooker.book2D(name, name, hist_drift_, min_drift_, max_drift_, hist_depth_, min_depth_, max_depth_);
 
-    sprintf(name,
-            "h_BPixnew_drift_depth_noadc_detid_%i_layer%i_module%i",
-            iHists.BPixnewDetIds_[i],
-            iHists.BPixnewLayer_[i],
-            iHists.BPixnewModule_[i]);
+    sprintf(name, "h_BPixnew_drift_depth_noadc_%s", iHists.BPixnewmodulename_[i].c_str());
     iHists.h_drift_depth_noadc_[new_index] =
         iBooker.book2D(name, name, hist_drift_, min_drift_, max_drift_, hist_depth_, min_depth_, max_depth_);
 
-    sprintf(name,
-            "h_BPixnew_drift_depth_detid_%i_layer%i_module%i",
-            iHists.BPixnewDetIds_[i],
-            iHists.BPixnewLayer_[i],
-            iHists.BPixnewModule_[i]);
+    sprintf(name, "h_BPixnew_drift_depth_%s", iHists.BPixnewmodulename_[i].c_str());
     iHists.h_drift_depth_[new_index] =
         iBooker.book2D(name, name, hist_drift_, min_drift_, max_drift_, hist_depth_, min_depth_, max_depth_);
 
-    sprintf(name,
-            "h_BPixnew_mean_detid_%i_layer%i_module%i",
-            iHists.BPixnewDetIds_[i],
-            iHists.BPixnewLayer_[i],
-            iHists.BPixnewModule_[i]);
+    sprintf(name, "h_BPixnew_mean_%s", iHists.BPixnewmodulename_[i].c_str());
     iHists.h_mean_[new_index] = iBooker.book1D(name, name, hist_depth_, min_depth_, max_depth_);
   }
 }
@@ -844,7 +826,7 @@ const std::pair<LocalPoint, LocalPoint> SiPixelLorentzAnglePCLWorker::surface_de
 
   LocalPoint lp_rechit = topol->localPosition(MeasurementPoint(pixels_rechit.first, pixels_rechit.second));
 
-  static std::pair<LocalPoint, LocalPoint> lps = std::make_pair(lp_track, lp_rechit);
+  std::pair<LocalPoint, LocalPoint> lps = std::make_pair(lp_track, lp_rechit);
   return lps;
 }
 

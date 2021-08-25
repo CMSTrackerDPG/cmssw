@@ -12,9 +12,12 @@ public:
 
   int nlay;
   std::vector<int> nModules_;
+  std::vector<std::string> BPixnewmodulename_;
   std::vector<int> BPixnewDetIds_;
   std::vector<int> BPixnewModule_;
   std::vector<int> BPixnewLayer_;
+
+  std::vector<std::string> FPixnewmodulename_;
   std::vector<int> FPixnewDetIds_;
   std::vector<int> FPixnewDisk_;
   std::vector<int> FPixnewBlade_;
