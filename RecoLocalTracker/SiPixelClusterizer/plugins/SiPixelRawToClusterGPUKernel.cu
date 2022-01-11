@@ -535,6 +535,8 @@ namespace pixelgpudetails {
 
   // Interface to outside
   void SiPixelRawToClusterGPUKernel::makeClustersAsync(bool isRun2,
+                                                       bool doDigiMorphing,
+                                                       SiPixelMorphingConfig digiMorphingConfig,
                                                        const SiPixelClusterThresholds clusterThresholds,
                                                        const SiPixelROCsStatusAndMapping *cablingMap,
                                                        const unsigned char *modToUnp,

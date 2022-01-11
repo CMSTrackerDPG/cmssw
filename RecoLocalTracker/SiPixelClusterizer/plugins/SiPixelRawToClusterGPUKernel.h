@@ -17,6 +17,7 @@
 
 // local include(s)
 #include "SiPixelClusterThresholds.h"
+#include "SiPixelMorphingConfig.h"
 
 struct SiPixelROCsStatusAndMapping;
 class SiPixelGainForHLTonGPU;
@@ -98,6 +99,8 @@ namespace pixelgpudetails {
     SiPixelRawToClusterGPUKernel& operator=(SiPixelRawToClusterGPUKernel&&) = delete;
 
     void makeClustersAsync(bool isRun2,
+                           bool doDigiMorphing,
+                           SiPixelMorphingConfig digiMorphingConfig,
                            const SiPixelClusterThresholds clusterThresholds,
                            const SiPixelROCsStatusAndMapping* cablingMap,
                            const unsigned char* modToUnp,
