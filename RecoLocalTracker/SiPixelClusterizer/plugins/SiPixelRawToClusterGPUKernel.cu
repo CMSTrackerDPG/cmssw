@@ -31,6 +31,7 @@
 #include "RecoLocalTracker/SiPixelClusterizer/plugins/gpuClustering.h"
 // local includes
 #include "SiPixelRawToClusterGPUKernel.h"
+#include "gpuDigiMorphing.h"
 
 namespace pixelgpudetails {
 
@@ -558,10 +559,15 @@ namespace pixelgpudetails {
     std::cout << "decoding " << wordCounter << " digis. Max is " << maxFedWords << std::endl;
 #endif
 
+    auto maxWordReserve = wordCounter;
+    if (doDigiMorphing) {
+      maxWordReserve += getUpperBoundForFlaggedDigis(wordCounter, digiMorphingConfig);
+    }
+
     // since wordCounter != 0 we're not allocating 0 bytes,
-    digis_d = SiPixelDigisCUDA(wordCounter, stream);
+    digis_d = SiPixelDigisCUDA(maxWordReserve, stream);
     if (includeErrors) {
-      digiErrors_d = SiPixelDigiErrorsCUDA(wordCounter, std::move(errors), stream);
+      digiErrors_d = SiPixelDigiErrorsCUDA(maxWordReserve, std::move(errors), stream);
     }
     clusters_d = SiPixelClustersCUDA(phase1PixelTopology::numberOfModules, stream);
 
