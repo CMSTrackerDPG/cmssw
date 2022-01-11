@@ -23,6 +23,25 @@ run3_common.toModify(siPixelClustersPreSplittingCUDA,
                      isRun2 = False,
                      clusterThreshold_layer1 = 4000)
 
+# import siPixelDigisMorphed to copy parameter settings
+from RecoLocalTracker.SiPixelDigiReProducers.siPixelDigisMorphed_cfi import siPixelDigisMorphed
+
+from Configuration.ProcessModifiers.siPixelDigiMorphing_cff import siPixelDigiMorphing
+siPixelDigiMorphing.toModify(siPixelClustersPreSplittingCUDA,
+    # execute extra instructions to heal split clusters
+    DoDigiMorphing = True,
+    # set optinal psd1 ParameterSetDescription values
+    DigiMorphing = cms.PSet(
+        nrows = cms.int32(siPixelDigisMorphed.nrows.value()),
+        ncols = cms.int32(siPixelDigisMorphed.ncols.value()),
+        nrocs = cms.int32(siPixelDigisMorphed.nrocs.value()),
+        iters = cms.int32(siPixelDigisMorphed.iters.value()),
+        kernel1 = cms.vint32(siPixelDigisMorphed.kernel1.value()),
+        kernel2 = cms.vint32(siPixelDigisMorphed.kernel2.value()),
+        fakeAdc = cms.uint32(siPixelDigisMorphed.fakeAdc.value())
+    )
+)
+
 # convert the pixel digis (except errors) and clusters to the legacy format
 from RecoLocalTracker.SiPixelClusterizer.siPixelDigisClustersFromSoA_cfi import siPixelDigisClustersFromSoA as _siPixelDigisClustersFromSoA
 siPixelDigisClustersPreSplitting = _siPixelDigisClustersFromSoA.clone()

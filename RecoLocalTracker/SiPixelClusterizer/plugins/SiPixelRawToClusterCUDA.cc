@@ -39,6 +39,7 @@
 // local includes
 #include "SiPixelClusterThresholds.h"
 #include "SiPixelRawToClusterGPUKernel.h"
+#include "SiPixelMorphingConfig.h"
 
 class SiPixelRawToClusterCUDA : public edm::stream::EDProducer<edm::ExternalWork> {
 public:
@@ -79,8 +80,10 @@ private:
   const bool includeErrors_;
   const bool useQuality_;
   const uint32_t maxFedWords_;
+  const bool doDigiMorphing_;
   uint32_t nDigis_;
   const SiPixelClusterThresholds clusterThresholds_;
+  SiPixelMorphingConfig digiMorphingConfig_;  // not const, optionally uninitialized
 };
 
 SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(const edm::ParameterSet& iConfig)
@@ -95,6 +98,7 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(const edm::ParameterSet& iConfi
       includeErrors_(iConfig.getParameter<bool>("IncludeErrors")),
       useQuality_(iConfig.getParameter<bool>("UseQualityInfo")),
       maxFedWords_(iConfig.getParameter<uint32_t>("MaxFEDWords")),
+      doDigiMorphing_(iConfig.getParameter<bool>("DoDigiMorphing")),
       clusterThresholds_{iConfig.getParameter<int32_t>("clusterThreshold_layer1"),
                          iConfig.getParameter<int32_t>("clusterThreshold_otherLayers")} {
   if (includeErrors_) {
@@ -110,6 +114,17 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(const edm::ParameterSet& iConfi
   if (cs->enabled()) {
     wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>(maxFedWords_);
   }
+
+  if (doDigiMorphing_) {
+    edm::ParameterSet digiPSet = iConfig.getParameter<edm::ParameterSet>("DigiMorphing");
+    digiMorphingConfig_ = SiPixelMorphingConfig{.nrows_ = digiPSet.getParameter<int32_t>("nrows"),
+                                                .ncols_ = digiPSet.getParameter<int32_t>("ncols"),
+                                                .nrocs_ = digiPSet.getParameter<int32_t>("nrocs"),
+                                                .iters_ = digiPSet.getParameter<int32_t>("iters"),
+                                                .kernel1_ = digiPSet.getParameter<std::vector<int32_t>>("kernel1"),
+                                                .kernel2_ = digiPSet.getParameter<std::vector<int32_t>>("kernel2"),
+                                                .fakeAdc_ = digiPSet.getParameter<uint32_t>("fakeAdc")};
+  }
 }
 
 void SiPixelRawToClusterCUDA::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -118,6 +133,7 @@ void SiPixelRawToClusterCUDA::fillDescriptions(edm::ConfigurationDescriptions& d
   desc.add<bool>("IncludeErrors", true);
   desc.add<bool>("UseQualityInfo", false);
   desc.add<uint32_t>("MaxFEDWords", pixelgpudetails::MAX_FED * pixelgpudetails::MAX_WORD);
+  desc.add<bool>("DoDigiMorphing", false);
   desc.add<int32_t>("clusterThreshold_layer1", kSiPixelClusterThresholdsDefaultPhase1.layer1);
   desc.add<int32_t>("clusterThreshold_otherLayers", kSiPixelClusterThresholdsDefaultPhase1.otherLayers);
   desc.add<edm::InputTag>("InputLabel", edm::InputTag("rawDataCollector"));
@@ -130,6 +146,21 @@ void SiPixelRawToClusterCUDA::fillDescriptions(edm::ConfigurationDescriptions& d
     desc.add<edm::ParameterSetDescription>("Regions", psd0)
         ->setComment("## Empty Regions PSet means complete unpacking");
   }
+
+  // optional parameter settings for digi morhping -> to be configured in python config file to be the same as the CPU configuration
+  {
+    edm::ParameterSetDescription psd1;
+    psd1.addOptional<int32_t>("nrows");
+    psd1.addOptional<int32_t>("ncols");
+    psd1.addOptional<int32_t>("nrocs");
+    psd1.addOptional<int32_t>("iters");
+    psd1.addOptional<std::vector<int32_t>>("kernel1");
+    psd1.addOptional<std::vector<int32_t>>("kernel2");
+    psd1.addOptional<uint32_t>("fakeAdc");
+    desc.add<edm::ParameterSetDescription>("DigiMorphing", psd1)
+        ->setComment("## Parameter settings for digi morphing to heal split clusters");
+  }
+
   desc.add<std::string>("CablingMapLabel", "")->setComment("CablingMap label");  //Tav
   descriptions.addWithDefaultLabel(desc);
 }
@@ -246,6 +277,8 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
     return;
 
   gpuAlgo_.makeClustersAsync(isRun2_,
+                             doDigiMorphing_,
+                             digiMorphingConfig_,
                              clusterThresholds_,
                              gpuMap,
                              gpuModulesToUnpack,

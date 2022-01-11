@@ -31,6 +31,7 @@
 #include "RecoLocalTracker/SiPixelClusterizer/plugins/gpuClustering.h"
 // local includes
 #include "SiPixelRawToClusterGPUKernel.h"
+#include "gpuDigiMorphing.h"
 
 namespace pixelgpudetails {
 
@@ -535,6 +536,8 @@ namespace pixelgpudetails {
 
   // Interface to outside
   void SiPixelRawToClusterGPUKernel::makeClustersAsync(bool isRun2,
+                                                       bool doDigiMorphing,
+                                                       SiPixelMorphingConfig digiMorphingConfig,
                                                        const SiPixelClusterThresholds clusterThresholds,
                                                        const SiPixelROCsStatusAndMapping *cablingMap,
                                                        const unsigned char *modToUnp,
@@ -555,6 +558,10 @@ namespace pixelgpudetails {
 #ifdef GPU_DEBUG
     std::cout << "decoding " << wordCounter << " digis. Max is " << maxFedWords << std::endl;
 #endif
+
+    if (doDigiMorphing) {
+      fake_digis_d = SiPixelDigisCUDA(getUpperBoundForFakeDigis(wordCounter, digiMorphingConfig), stream);
+    }
 
     // since wordCounter != 0 we're not allocating 0 bytes,
     digis_d = SiPixelDigisCUDA(wordCounter, stream);
@@ -650,6 +657,41 @@ namespace pixelgpudetails {
           digis_d.view().moduleInd(), clusters_d.moduleStart(), digis_d.view().clus(), wordCounter);
       cudaCheck(cudaGetLastError());
 
+      int fakeDigis = 0;
+
+      auto fakeDigisCounter_d = cms::cuda::make_device_unique<int[]>(1, stream);
+      cudaCheck(cudaMemcpyAsync(fakeDigisCounter_d.get(), &fakeDigis, sizeof(int), cudaMemcpyHostToDevice, stream));
+
+      // possible digi morphing kernel launch
+      if (doDigiMorphing) {
+        auto kernels_d = constructMorphingKernelsFromConfig(digiMorphingConfig, stream);
+        int kernelSize2 = getKernelSizeFromConfig(digiMorphingConfig);
+
+        int threadsPerBlock = 256;
+        int blocks = gpuClustering::maxNumModules * gpudigimorphing::moduleConvolutions;
+        int sharedMemRowSize = gpudigimorphing::FLAG_TYPE_BITS / 8;
+        int sharedMemSize =
+            (digiMorphingConfig.nrows_ / gpudigimorphing::divideModuleRows + 2 * digiMorphingConfig.iters_) *
+            (sharedMemRowSize)*3;
+        gpudigimorphing::clusterHealingWithDigiMorphing_kernel<<<blocks, threadsPerBlock, sharedMemSize, stream>>>(
+            digis_d.view(),
+            fake_digis_d.view(),
+            digiMorphingConfig,
+            kernels_d.get(),
+            clusters_d.moduleStart(),
+            wordCounter,
+            fakeDigisCounter_d.get());
+        cudaCheck(cudaGetLastError());
+
+#ifdef GPU_DEBUG
+        int fakes;
+        cudaCheck(cudaMemcpyAsync(&fakes, fakeDigisCounter_d.get(), sizeof(int), cudaMemcpyDeviceToHost, stream));
+        cudaDeviceSynchronize();
+        cudaCheck(cudaGetLastError());
+        std::cout << "Added " << fakes << " fake digis to the buffer fake_digis_d" << std::endl;
+#endif
+      }
+
       threadsPerBlock = 256 + 128;  /// should be larger than 6000/16 aka (maxPixInModule/maxiter in the kernel)
       blocks = phase2PixelTopology::numberOfModules;
 #ifdef GPU_DEBUG
@@ -663,7 +705,9 @@ namespace pixelgpudetails {
                                                               clusters_d.clusInModule(),
                                                               clusters_d.moduleId(),
                                                               digis_d.view().clus(),
-                                                              wordCounter);
+                                                              wordCounter,
+                                                              fake_digis_d.view(),
+                                                              fakeDigisCounter_d.get());
       cudaCheck(cudaGetLastError());
 #ifdef GPU_DEBUG
       cudaDeviceSynchronize();

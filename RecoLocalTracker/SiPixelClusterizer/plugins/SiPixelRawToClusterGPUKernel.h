@@ -17,6 +17,7 @@
 
 // local include(s)
 #include "SiPixelClusterThresholds.h"
+#include "SiPixelMorphingConfig.h"
 
 struct SiPixelROCsStatusAndMapping;
 class SiPixelGainForHLTonGPU;
@@ -98,6 +99,8 @@ namespace pixelgpudetails {
     SiPixelRawToClusterGPUKernel& operator=(SiPixelRawToClusterGPUKernel&&) = delete;
 
     void makeClustersAsync(bool isRun2,
+                           bool doDigiMorphing,
+                           SiPixelMorphingConfig digiMorphingConfig,
                            const SiPixelClusterThresholds clusterThresholds,
                            const SiPixelROCsStatusAndMapping* cablingMap,
                            const unsigned char* modToUnp,
@@ -143,7 +146,7 @@ namespace pixelgpudetails {
 
     // Data to be put in the event
     cms::cuda::host::unique_ptr<uint32_t[]> nModules_Clusters_h;
-    SiPixelDigisCUDA digis_d;
+    SiPixelDigisCUDA digis_d, fake_digis_d;
     SiPixelClustersCUDA clusters_d;
     SiPixelDigiErrorsCUDA digiErrors_d;
   };
