@@ -657,6 +657,25 @@ namespace pixelgpudetails {
           digis_d.view().moduleInd(), clusters_d.moduleStart(), digis_d.view().clus(), wordCounter);
       cudaCheck(cudaGetLastError());
 
+      int fakeDigis = 0;
+
+      auto numElements_d = cms::cuda::make_device_unique<int[]>(1, stream);
+      cudaCheck(cudaMemcpyAsync(numElements_d.get(), &wordCounter, sizeof(int), cudaMemcpyHostToDevice, stream));
+
+      // possible digi morphing kernel launch
+      if (doDigiMorphing) {
+
+        auto kernels_h = constructMorphingKernelsFromConfig(digiMorphingConfig);
+        int kernelSize2 = getKernelSizeFromConfig(digiMorphingConfig);
+      
+
+#ifdef GPU_DEBUG
+        cudaDeviceSynchronize();
+        cudaCheck(cudaGetLastError());
+        std::cout << "Added " << fakeDigis <<  " fake digis to the buffer fake_digis_d" << std::endl;
+#endif
+      }
+
       threadsPerBlock = 256 + 128;  /// should be larger than 6000/16 aka (maxPixInModule/maxiter in the kernel)
       blocks = phase2PixelTopology::numberOfModules;
 #ifdef GPU_DEBUG

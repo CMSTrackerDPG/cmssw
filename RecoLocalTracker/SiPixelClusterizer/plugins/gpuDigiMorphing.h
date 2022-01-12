@@ -48,4 +48,27 @@ int getUpperBoundForFakeDigis(uint32_t wordCounter, SiPixelMorphingConfig const&
   return wordCounter * countKernelOverlap(c);
 }
 
+int getKernelSizeFromConfig(SiPixelMorphingConfig const& digiMorphingConfig)
+{
+  return digiMorphingConfig.kernel1_.size();
+}
+
+std::vector<std::vector<int>> constructMorphingKernelsFromConfig(SiPixelMorphingConfig const& digiMorphingConfig)
+{
+  int kernelSize = getKernelSizeFromConfig(digiMorphingConfig);
+  std::vector<int> kernel_dilate_h(kernelSize*kernelSize, 0);
+  std::vector<int> kernel_erode_h(kernelSize*kernelSize, 0);
+  for (int i = 0; i*i < kernelSize; ++i) {
+    int row_d = digiMorphingConfig.kernel1_[i];
+    int row_e = digiMorphingConfig.kernel2_[i];
+    for (int j = 0; j*j < kernelSize; ++j) {
+      kernel_dilate_h[i * kernelSize + (kernelSize - j - 1)] = (row_d % 2);
+      kernel_erode_h[i * kernelSize + (kernelSize - j - 1)] = (row_e % 2);
+      row_d /= 2;
+      row_e /= 2;
+    }
+  }
+  return {kernel_dilate_h, kernel_erode_h};
+}
+
 #endif  // RecoLocalTracker_SiPixelClusterizer_plugins_gpuDigiMorhping_h
