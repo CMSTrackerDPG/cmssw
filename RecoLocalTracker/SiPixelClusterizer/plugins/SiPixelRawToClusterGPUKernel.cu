@@ -659,20 +659,36 @@ namespace pixelgpudetails {
 
       int fakeDigis = 0;
 
-      auto numElements_d = cms::cuda::make_device_unique<int[]>(1, stream);
-      cudaCheck(cudaMemcpyAsync(numElements_d.get(), &wordCounter, sizeof(int), cudaMemcpyHostToDevice, stream));
+      auto fakeDigisCounter_d = cms::cuda::make_device_unique<int[]>(1, stream);
+      cudaCheck(cudaMemcpyAsync(fakeDigisCounter_d.get(), &fakeDigis, sizeof(int), cudaMemcpyHostToDevice, stream));
 
       // possible digi morphing kernel launch
       if (doDigiMorphing) {
-
-        auto kernels_h = constructMorphingKernelsFromConfig(digiMorphingConfig);
+        auto kernels_d = constructMorphingKernelsFromConfig(digiMorphingConfig, stream);
         int kernelSize2 = getKernelSizeFromConfig(digiMorphingConfig);
-      
+
+        int threadsPerBlock = 256;
+        int blocks = gpuClustering::maxNumModules * gpudigimorphing::moduleConvolutions;
+        int sharedMemRowSize = gpudigimorphing::FLAG_TYPE_BITS / 8;
+        int sharedMemSize =
+            (digiMorphingConfig.nrows_ / gpudigimorphing::divideModuleRows + 2 * digiMorphingConfig.iters_) *
+            (sharedMemRowSize)*3;
+        gpudigimorphing::clusterHealingWithDigiMorphing_kernel<<<blocks, threadsPerBlock, sharedMemSize, stream>>>(
+            digis_d.view(),
+            fake_digis_d.view(),
+            digiMorphingConfig,
+            kernels_d.get(),
+            clusters_d.moduleStart(),
+            wordCounter,
+            fakeDigisCounter_d.get());
+        cudaCheck(cudaGetLastError());
 
 #ifdef GPU_DEBUG
+        int fakes;
+        cudaCheck(cudaMemcpyAsync(&fakes, fakeDigisCounter_d.get(), sizeof(int), cudaMemcpyDeviceToHost, stream));
         cudaDeviceSynchronize();
         cudaCheck(cudaGetLastError());
-        std::cout << "Added " << fakeDigis <<  " fake digis to the buffer fake_digis_d" << std::endl;
+        std::cout << "Added " << fakes << " fake digis to the buffer fake_digis_d" << std::endl;
 #endif
       }
 
