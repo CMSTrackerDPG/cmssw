@@ -559,15 +559,14 @@ namespace pixelgpudetails {
     std::cout << "decoding " << wordCounter << " digis. Max is " << maxFedWords << std::endl;
 #endif
 
-    auto maxWordReserve = wordCounter;
     if (doDigiMorphing) {
-      maxWordReserve += getUpperBoundForFlaggedDigis(wordCounter, digiMorphingConfig);
+      fake_digis_d = SiPixelDigisCUDA(getUpperBoundForFakeDigis(wordCounter, digiMorphingConfig), stream);
     }
 
     // since wordCounter != 0 we're not allocating 0 bytes,
-    digis_d = SiPixelDigisCUDA(maxWordReserve, stream);
+    digis_d = SiPixelDigisCUDA(wordCounter, stream);
     if (includeErrors) {
-      digiErrors_d = SiPixelDigiErrorsCUDA(maxWordReserve, std::move(errors), stream);
+      digiErrors_d = SiPixelDigiErrorsCUDA(wordCounter, std::move(errors), stream);
     }
     clusters_d = SiPixelClustersCUDA(phase1PixelTopology::numberOfModules, stream);
 

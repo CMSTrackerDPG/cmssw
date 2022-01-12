@@ -44,7 +44,7 @@ int countKernelOverlap(SiPixelMorphingConfig const& c) {
   return bitsSet - 1;
 }
 
-int getUpperBoundForFlaggedDigis(uint32_t wordCounter, SiPixelMorphingConfig const& c) {
+int getUpperBoundForFakeDigis(uint32_t wordCounter, SiPixelMorphingConfig const& c) {
   return wordCounter * countKernelOverlap(c);
 }
 
