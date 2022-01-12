@@ -90,6 +90,53 @@ namespace gpudigimorphing {
     num |= 1UL << b;
   }
 
+  __device__ void convolutionByBitManipulation(int const* kernel,
+                                               SiPixelMorphingConfig const& morphingConfig,
+                                               FLAG_KERNEL_TYPE* nonConvolutedPixels,
+                                               FLAG_KERNEL_TYPE* convolutedPixels,
+                                               int heightMin,
+                                               int heightMax,
+                                               int rocHeight,
+                                               bool isDilate) {
+    int kernelRadius = morphingConfig.iters_;
+    int kernelSize = 2 * kernelRadius + 1;
+    for (int i = threadIdx.x + heightMin; i < heightMax; i += blockDim.x) {
+      int index = getIndex(i, 0, rocHeight, morphingConfig.iters_);
+      FLAG_KERNEL_TYPE hits = 0;
+      for (int r1 = -kernelRadius; r1 <= kernelRadius; ++r1) {
+        for (int r2 = -kernelRadius; r2 <= kernelRadius; ++r2) {
+          if (kernel[(1 + r1) * kernelSize + (1 + r2)] == 1) {
+            auto newIndex = index + r1;
+            // assert(newIndex >= 0 && newIndex < p.convolutionHeight);
+            auto newRow = nonConvolutedPixels[newIndex];
+            if (r2 < 0)
+              newRow >>= std::abs(r2);
+            else
+              newRow <<= r2;
+            if (isDilate)
+              hits |= newRow;
+            else
+              hits &= newRow;
+          }
+        }
+      }
+      // if (hits)
+      convolutedPixels[index] = hits;
+    }
+  }
+
+  struct ROCParameters {
+    int rocWidth;
+    int rocHeight;
+    int convolutionHeight;
+  };
+
+  __device__ ROCParameters computeROCParameters(SiPixelMorphingConfig const& morphingConfig) {
+    return ROCParameters{.rocWidth = morphingConfig.ncols_ / divideModuleCols,
+                         .rocHeight = morphingConfig.nrows_ / divideModuleRows,
+                         .convolutionHeight = morphingConfig.nrows_ / divideModuleRows + 2 * morphingConfig.iters_};
+  }
+
   __global__ void clusterHealingWithDigiMorphing_kernel(
       SiPixelDigisCUDASOAView const digisView,
       SiPixelDigisCUDASOAView const fakeDigisView,
@@ -99,13 +146,8 @@ namespace gpudigimorphing {
       int numDigis,
       int* fakeCounter) {
     assert(morphingConfig.ncols_ / divideModuleCols + 2 * morphingConfig.iters_ < FLAG_TYPE_BITS);
-    const int rocWidth = morphingConfig.ncols_ / divideModuleCols;                            // 52
-    const int rocHeight = morphingConfig.nrows_ / divideModuleRows;                           // 80
-    const int height = morphingConfig.nrows_ / divideModuleRows + 2 * morphingConfig.iters_;  // 82
-    const int MODULE_SIZE = height;
 
-    int kernelRadius = morphingConfig.iters_;
-    int kernelSize = 2 * kernelRadius + 1;
+    auto p = computeROCParameters(morphingConfig);
 
 #ifdef GPU_DEBUG
     const int width = FLAG_TYPE_BITS;  // 64
@@ -113,14 +155,17 @@ namespace gpudigimorphing {
     if (blockIdx.x * blockDim.x + threadIdx.x == 0)
       printf("Start kernel clusterHealingWithDigiMorphing_kernel, width is %d\n", width);
 #endif
+
     extern __shared__ FLAG_KERNEL_TYPE s[];  // shared memory has size width*height*2/8 bytes
     FLAG_KERNEL_TYPE* modulePixels = s;
-    FLAG_KERNEL_TYPE* dilatedPixels = s + MODULE_SIZE;
-    FLAG_KERNEL_TYPE* erodedPixels = s + 2 * MODULE_SIZE;
+    FLAG_KERNEL_TYPE* dilatedPixels = s + p.convolutionHeight;
+    FLAG_KERNEL_TYPE* erodedPixels = s + 2 * p.convolutionHeight;
+    int kernelRadius = morphingConfig.iters_;
+    int kernelSize = 2 * kernelRadius + 1;
     auto kernelDilate = kernels;
     auto kernelErode = kernels + kernelSize * kernelSize;
     // set to zero
-    for (int i = threadIdx.x; i < MODULE_SIZE; i += blockDim.x) {
+    for (int i = threadIdx.x; i < p.convolutionHeight; i += blockDim.x) {
       modulePixels[i] = dilatedPixels[i] = erodedPixels[i] = 0;
     }
 
@@ -136,10 +181,10 @@ namespace gpudigimorphing {
       auto thisModuleId = digisView.moduleInd(firstPixel);
 
       int rocId = (module % moduleConvolutions);
-      int widthMin = (rocId % divideModuleCols) * rocWidth;
-      int widthMax = widthMin + rocWidth;
-      int heightMin = (rocId / divideModuleCols) * rocHeight;
-      int heightMax = heightMin + rocHeight;
+      int widthMin = (rocId % divideModuleCols) * p.rocWidth;
+      int widthMax = widthMin + p.rocWidth;
+      int heightMin = (rocId / divideModuleCols) * p.rocHeight;
+      int heightMax = heightMin + p.rocHeight;
 
       FLAG_KERNEL_TYPE num = 0;
       for (int i = first; i < numDigis; i += blockDim.x) {
@@ -151,71 +196,35 @@ namespace gpudigimorphing {
         if (widthMin <= digisView.yy(i) && digisView.yy(i) < widthMax && heightMin <= digisView.xx(i) &&
             digisView.xx(i) < heightMax) {
           num = 0;
-          int index = getIndex(digisView.xx(i), digisView.yy(i), rocHeight, morphingConfig.iters_);
-          setBit(num, digisView.yy(i) + morphingConfig.iters_, rocWidth);
+          int index = getIndex(digisView.xx(i), digisView.yy(i), p.rocHeight, morphingConfig.iters_);
+          setBit(num, digisView.yy(i) + morphingConfig.iters_, p.rocWidth);
           atomicAdd(modulePixels + index, num);
         }
       }
       __syncthreads();
 
       // dilate
-      for (int i = threadIdx.x + heightMin; i < heightMax; i += blockDim.x) {
-        int index = getIndex(i, 0, rocHeight, morphingConfig.iters_);
-        FLAG_KERNEL_TYPE hits = 0;
-        for (int r1 = -kernelRadius; r1 <= kernelRadius; ++r1) {
-          for (int r2 = -kernelRadius; r2 <= kernelRadius; ++r2) {
-            if (kernelDilate[(1 + r1) * kernelSize + (1 + r2)] == 1) {
-              auto newIndex = index + r1;
-              assert(newIndex >= 0 && newIndex < MODULE_SIZE);
-              auto newRow = modulePixels[newIndex];
-              if (r2 < 0)
-                newRow >>= std::abs(r2);
-              else
-                newRow <<= r2;
-              hits |= newRow;
-            }
-          }
-        }
-        if (hits)  // we set dilatedPixels to 0 earlier, only overwrite when result is non-zero
-          dilatedPixels[index] = hits;
-      }
+      convolutionByBitManipulation(
+          kernelDilate, morphingConfig, modulePixels, dilatedPixels, heightMin, heightMax, p.rocHeight, true);
       __syncthreads();
 
-      for (int i = threadIdx.x + heightMin; i < heightMax; i += blockDim.x) {
-        int index = getIndex(i, 0, rocHeight, morphingConfig.iters_);
-        FLAG_KERNEL_TYPE hits = 0;
-        hits -= 1;  // get maximum value storable, full ones
-        for (int r1 = -kernelRadius; r1 <= kernelRadius && hits > 0; ++r1) {
-          for (int r2 = -kernelRadius; r2 <= kernelRadius && hits > 0; ++r2) {
-            if (kernelErode[(1 + r1) * kernelSize + (1 + r2)] == 1) {
-              auto newIndex = index + r1;
-              assert(newIndex >= 0 && newIndex < MODULE_SIZE);
-              auto newRow = dilatedPixels[newIndex];
-              if (r2 < 0)
-                newRow >>= std::abs(r2);
-              else
-                newRow <<= r2;
-              hits &= newRow;
-            }
-          }
-        }
-        if (hits)
-          erodedPixels[index] = hits;
-      }
+      // erode
+      convolutionByBitManipulation(
+          kernelErode, morphingConfig, dilatedPixels, erodedPixels, heightMin, heightMax, p.rocHeight, false);
       __syncthreads();
 
       // compare morphed (erodedPixels) pixels and originals (modulePixels)
       for (int row = threadIdx.x + heightMin; row < heightMax; row += blockDim.x) {
         int col = widthMax - 1;
-        int index = getIndex(row, col, rocHeight, morphingConfig.iters_);
+        int index = getIndex(row, col, p.rocHeight, morphingConfig.iters_);
         FLAG_KERNEL_TYPE hits = (erodedPixels[index] & (~modulePixels[index]));
         hits >>= (FLAG_TYPE_BITS - (morphingConfig.ncols_ / divideModuleCols + 2 * morphingConfig.iters_) +
                   morphingConfig.iters_);
         while (hits) {
           if (hits & 1)  // check last bit
           {
-            assert(col >= 0 && col < morphingConfig.ncols_);
-            assert(row >= 0 && row < morphingConfig.nrows_);
+            // assert(col >= 0 && col < morphingConfig.ncols_);
+            // assert(row >= 0 && row < morphingConfig.nrows_);
             // int old = atomicAdd(counter, 1);
             // id[old] = thisModuleId;
             // x[old] = row;
