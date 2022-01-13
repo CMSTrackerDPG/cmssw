@@ -78,13 +78,13 @@ public:
   const uint32_t* pdigi() const { return pdigi_; }
   const uint32_t* rawIdArr() const { return rawIdArr_; }
 
-  uint16_t* xx() { return xx_; }
-  uint16_t* yy() { return yy_; }
-  uint16_t* adc() { return adc_; }
-  uint16_t* moduleInd() { return moduleInd_; }
-  int32_t* clus() { return clus_; }
-  uint32_t* pdigi() { return pdigi_; }
-  uint32_t* rawIdArr() { return rawIdArr_; }
+  __host__ __device__ uint16_t* xx() { return xx_; }
+  __host__ __device__ uint16_t* yy() { return yy_; }
+  __host__ __device__ uint16_t* adc() { return adc_; }
+  __host__ __device__ uint16_t* moduleInd() { return moduleInd_; }
+  __host__ __device__ int32_t* clus() { return clus_; }
+  __host__ __device__ uint32_t* pdigi() { return pdigi_; }
+  __host__ __device__ uint32_t* rawIdArr() { return rawIdArr_; }
 
 private:
   uint16_t* xx_;  // local coordinates of each pixel

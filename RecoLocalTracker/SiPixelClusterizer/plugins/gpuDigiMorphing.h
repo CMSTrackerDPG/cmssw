@@ -139,7 +139,7 @@ namespace gpudigimorphing {
 
   __global__ void clusterHealingWithDigiMorphing_kernel(
       SiPixelDigisCUDASOAView const digisView,
-      SiPixelDigisCUDASOAView const fakeDigisView,
+      SiPixelDigisCUDASOAView fakeDigisView,
       SiPixelMorphingConfig const morphingConfig,
       int const* kernels,
       uint32_t* moduleStart,  // index of the first pixel of each module)
@@ -225,13 +225,12 @@ namespace gpudigimorphing {
           {
             // assert(col >= 0 && col < morphingConfig.ncols_);
             // assert(row >= 0 && row < morphingConfig.nrows_);
-            // int old = atomicAdd(counter, 1);
-            // id[old] = thisModuleId;
-            // x[old] = row;
-            // y[old] = col;
-            // adc[old] = morphingConfig.fakeAdc_ * 10;  // calibrate fake digis
-            // flag[old] = 1;
-            // clusterId[old] = old;
+            int old = atomicAdd(fakeCounter, 1);
+            fakeDigisView.moduleInd()[old] = thisModuleId;
+            fakeDigisView.xx()[old] = row;
+            fakeDigisView.yy()[old] = col;
+            fakeDigisView.adc()[old] = morphingConfig.fakeAdc_ * 10;  // calibrate fake digis
+            fakeDigisView.clus()[old] = old;
           }
           hits >>= 1;
           col--;
