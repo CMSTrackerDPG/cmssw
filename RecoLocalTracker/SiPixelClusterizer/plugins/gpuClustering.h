@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include "CUDADataFormats/SiPixelCluster/interface/gpuClusteringConstants.h"
+#include "CUDADataFormats/SiPixelDigi/interface/SiPixelDigisCUDASOAView.h"
 #include "Geometry/CommonTopologies/interface/SimplePixelTopology.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/HistoContainer.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/cuda_assert.h"
@@ -46,7 +47,9 @@ namespace gpuClustering {
                            uint32_t* __restrict__ nClustersInModule,  // output: number of clusters found in each module
                            uint32_t* __restrict__ moduleId,           // output: module id of each module
                            int32_t* __restrict__ clusterId,           // output: cluster id of each pixel
-                           int numElements) {
+                           int numElements,
+                           SiPixelDigisCUDASOAView const fakeDigisView = SiPixelDigisCUDASOAView{},
+                           int* numFakes = nullptr) {
     __shared__ int msize;
 
     auto firstModule = blockIdx.x;

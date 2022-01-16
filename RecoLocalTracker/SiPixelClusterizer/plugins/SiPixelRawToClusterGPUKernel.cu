@@ -705,7 +705,7 @@ namespace pixelgpudetails {
                                                               clusters_d.clusInModule(),
                                                               clusters_d.moduleId(),
                                                               digis_d.view().clus(),
-                                                              wordCounter);
+                                                              wordCounter, fake_digis_d.view(), fakeDigisCounter_d.get());
       cudaCheck(cudaGetLastError());
 #ifdef GPU_DEBUG
       cudaDeviceSynchronize();

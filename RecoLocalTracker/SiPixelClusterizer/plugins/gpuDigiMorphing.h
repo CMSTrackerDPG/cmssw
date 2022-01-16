@@ -90,6 +90,12 @@ namespace gpudigimorphing {
     num |= 1UL << b;
   }
 
+  inline __device__ bool getBit(FLAG_KERNEL_TYPE num, int bit, int rocWidth) {
+    int b = bit % rocWidth;
+    b = (FLAG_TYPE_BITS - 1 - b);
+    return (num >> b) & 1;
+  }
+
   __device__ void convolutionByBitManipulation(int const* kernel,
                                                SiPixelMorphingConfig const& morphingConfig,
                                                FLAG_KERNEL_TYPE* nonConvolutedPixels,
@@ -103,8 +109,9 @@ namespace gpudigimorphing {
     for (int i = threadIdx.x + heightMin; i < heightMax; i += blockDim.x) {
       int index = getIndex(i, 0, rocHeight, morphingConfig.iters_);
       FLAG_KERNEL_TYPE hits = 0;
-      for (int r1 = -kernelRadius; r1 <= kernelRadius; ++r1) {
-        for (int r2 = -kernelRadius; r2 <= kernelRadius; ++r2) {
+      if(!isDilate) hits-=1; // get maximum value storable, full ones
+      for (int r1 = -kernelRadius; r1 <= kernelRadius and (isDilate or hits > 0); ++r1) {
+        for (int r2 = -kernelRadius; r2 <= kernelRadius and (isDilate or hits > 0); ++r2) {
           if (kernel[(1 + r1) * kernelSize + (1 + r2)] == 1) {
             auto newIndex = index + r1;
             // assert(newIndex >= 0 && newIndex < p.convolutionHeight);
@@ -148,6 +155,9 @@ namespace gpudigimorphing {
     assert(morphingConfig.ncols_ / divideModuleCols + 2 * morphingConfig.iters_ < FLAG_TYPE_BITS);
 
     auto p = computeROCParameters(morphingConfig);
+    assert(p.rocWidth == 52);
+    assert(p.rocHeight==80);
+    assert(p.convolutionHeight==82);
 
 #ifdef GPU_DEBUG
     const int width = FLAG_TYPE_BITS;  // 64
@@ -196,6 +206,13 @@ namespace gpudigimorphing {
         if (widthMin <= digisView.yy(i) && digisView.yy(i) < widthMax && heightMin <= digisView.xx(i) &&
             digisView.xx(i) < heightMax) {
           num = 0;
+          #ifdef GPU_DEBUG
+          if (thisModuleId % 2000 ==1564) {
+        if (threadIdx.x == 0 && (blockIdx.x % moduleConvolutions) == 8) {
+          printf("Hit at %d row%d col%d\n", thisModuleId, digisView.xx(i), digisView.yy(i));
+        }}
+          #endif
+
           int index = getIndex(digisView.xx(i), digisView.yy(i), p.rocHeight, morphingConfig.iters_);
           setBit(num, digisView.yy(i) + morphingConfig.iters_, p.rocWidth);
           atomicAdd(modulePixels + index, num);
@@ -203,15 +220,75 @@ namespace gpudigimorphing {
       }
       __syncthreads();
 
+      #ifdef GPU_DEBUG
+      // print one pixel ROC of a module
+      if (thisModuleId % 2000 ==1564) {
+        if (threadIdx.x == 0 && (blockIdx.x % moduleConvolutions) == 8) {
+          printf("ROC BEFORE\n");
+          for (int row = 0; row < 80; ++row) {
+            // printf("ROW %d\n", row);
+            for (int col = 0; col < 52; ++col) {
+              auto idx = getIndex(row, col, p.convolutionHeight, morphingConfig.iters_);
+              auto num = modulePixels[idx];
+              bool b = getBit(num, col + morphingConfig.iters_, p.rocWidth);
+              printf("%d", b);
+            }
+            printf("\n");
+          }
+        }
+      }
+      __syncthreads();
+#endif
+
       // dilate
       convolutionByBitManipulation(
           kernelDilate, morphingConfig, modulePixels, dilatedPixels, heightMin, heightMax, p.rocHeight, true);
       __syncthreads();
 
+      #ifdef GPU_DEBUG
+      // print one pixel ROC of a module
+      if (thisModuleId % 2000 ==1564) {
+        if (threadIdx.x == 0 && (blockIdx.x % moduleConvolutions) == 8) {
+          printf("ROC AFTER DILATE\n");
+          for (int row = 0; row < 80; ++row) {
+            // printf("ROW %d\n", row);
+            for (int col = 0; col < 52; ++col) {
+              auto idx = getIndex(row, col, p.convolutionHeight, morphingConfig.iters_);
+              auto num = dilatedPixels[idx];
+              bool b = getBit(num, col + morphingConfig.iters_, p.rocWidth);
+              printf("%d", b);
+            }
+            printf("\n");
+          }
+        }
+      }
+      __syncthreads();
+#endif
+
       // erode
       convolutionByBitManipulation(
           kernelErode, morphingConfig, dilatedPixels, erodedPixels, heightMin, heightMax, p.rocHeight, false);
       __syncthreads();
+
+#ifdef GPU_DEBUG
+      // print one pixel ROC of a module
+      if (thisModuleId % 2000 ==1564) {
+        if (threadIdx.x == 0 && (blockIdx.x % moduleConvolutions) == 8) {
+          printf("ROC AFTER ERODE\n");
+          for (int row = 0; row < 80; ++row) {
+            // printf("ROW %d\n", row);
+            for (int col = 0; col < 52; ++col) {
+              auto idx = getIndex(row, col, p.convolutionHeight, morphingConfig.iters_);
+              auto num = erodedPixels[idx];
+              bool b = getBit(num, col + morphingConfig.iters_, p.rocWidth);
+              printf("%d", b);
+            }
+            printf("\n");
+          }
+        }
+      }
+      __syncthreads();
+#endif
 
       // compare morphed (erodedPixels) pixels and originals (modulePixels)
       for (int row = threadIdx.x + heightMin; row < heightMax; row += blockDim.x) {
@@ -225,6 +302,10 @@ namespace gpudigimorphing {
           {
             // assert(col >= 0 && col < morphingConfig.ncols_);
             // assert(row >= 0 && row < morphingConfig.nrows_);
+#ifdef GPU_DEBUG
+if(!(col >= 0 && col < morphingConfig.ncols_))
+      printf("Fake pixel found at row %d 0 <= col %d < morphingConfig.ncols_ %d in module %d\n", row, col, morphingConfig.ncols_, thisModuleId);
+#endif
             int old = atomicAdd(fakeCounter, 1);
             fakeDigisView.moduleInd()[old] = thisModuleId;
             fakeDigisView.xx()[old] = row;
