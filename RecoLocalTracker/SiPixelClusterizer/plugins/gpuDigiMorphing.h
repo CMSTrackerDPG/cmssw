@@ -25,23 +25,20 @@ int countBitsSet(unsigned int v) {
 int countKernelOverlap(SiPixelMorphingConfig const& c) {
   /**
     to determine an upper bound for extra digis
-    count the overlapping bits in the two kernels dilate and erode
-     - e.g. dilate + erode ->
-     x  x  x  x  x             x                   x
-     x  x  x  x  x          x  x  x             x  x  x
-     x  x  O  x  x   +   x  x  O  x  x  ->   x  x  O  x  x
-     x  x  x  x  x          x  x  x             x  x  x
-     x  x  x  x  x             x                   x
-     - overlapping bits (Xs) 12
+    divide the bits in kernel dilate by 2
+     - e.g. 24 / 2 = 12
+     x  x  x  x  x
+     x  x  x  x  x
+     x  x  O  x  x
+     x  x  x  x  x
+     x  x  x  x  x
     **/
-  assert(c.kernel1_.size() == c.kernel2_.size());
   int bitsSet = 0;
   for (auto i = 0u; i < c.kernel1_.size(); ++i) {
-    bitsSet += countBitsSet(c.kernel1_[i] & c.kernel2_[i]);
+    bitsSet += countBitsSet(c.kernel1_[i]);
   }
   assert(bitsSet > 0);
-  // extract 1 for original digi in the middle
-  return bitsSet - 1;
+  return (bitsSet - 1)/ 2;
 }
 
 int getUpperBoundForFakeDigis(uint32_t wordCounter, SiPixelMorphingConfig const& c) {
@@ -58,10 +55,10 @@ auto constructMorphingKernelsFromConfig(SiPixelMorphingConfig const& digiMorphin
   auto kernels_d = cms::cuda::make_device_unique<int[]>(twoKernelSize, stream);
   std::vector<int> kernels_h(twoKernelSize, 0);
 
-  for (int i = 0; i * i < kernelSize; ++i) {
+  for (int i = 0; i < kernelSize; ++i) {
     int row_d = digiMorphingConfig.kernel1_[i];
     int row_e = digiMorphingConfig.kernel2_[i];
-    for (int j = 0; j * j < kernelSize; ++j) {
+    for (int j = 0; j < kernelSize; ++j) {
       kernels_h[i * kernelSize + (kernelSize - j - 1)] = (row_d % 2);
       kernels_h[kernelSize * kernelSize + i * kernelSize + (kernelSize - j - 1)] = (row_e % 2);
       row_d /= 2;
@@ -82,18 +79,28 @@ namespace gpudigimorphing {
   const int divideModuleRows = 2;
   const int moduleConvolutions = divideModuleCols * divideModuleRows;
 
+  __device__ void binprintf(long v)
+{
+    uint64_t mask=(long)(1)<<((sizeof(long)<<3)-1);
+    while(mask) {
+        printf("%d", (v&mask ? 1 : 0));
+        mask >>= 1;
+    }
+    printf("\n");
+}
+
+__device__ void printModule(FLAG_KERNEL_TYPE* p){
+  for(int i=0;i<82;++i){
+    binprintf(*(p+i));
+  }
+}
+
   inline __device__ int getIndex(int row, int col, int maxRows, int iters) { return row % maxRows + iters; }
 
   inline __device__ void setBit(FLAG_KERNEL_TYPE& num, int bit, int rocWidth) {
     int b = bit % rocWidth;
     b = (FLAG_TYPE_BITS - 1 - b);
     num |= 1UL << b;
-  }
-
-  inline __device__ bool getBit(FLAG_KERNEL_TYPE num, int bit, int rocWidth) {
-    int b = bit % rocWidth;
-    b = (FLAG_TYPE_BITS - 1 - b);
-    return (num >> b) & 1;
   }
 
   __device__ void convolutionByBitManipulation(int const* kernel,
@@ -174,6 +181,13 @@ namespace gpudigimorphing {
     int kernelSize = 2 * kernelRadius + 1;
     auto kernelDilate = kernels;
     auto kernelErode = kernels + kernelSize * kernelSize;
+    #ifdef GPU_DEBUG
+    if(threadIdx.x + blockIdx.x*blockDim.x == 0){
+      printf("%d%d%d\n", *kernelDilate, *(kernelDilate+1), *(kernelDilate+2));
+      printf("%d%d%d\n", *(kernelDilate+3), *(kernelDilate+4), *(kernelDilate+5));
+      printf("%d%d%d\n", *(kernelDilate+6), *(kernelDilate+7), *(kernelDilate+8));
+    }
+    #endif
     // set to zero
     for (int i = threadIdx.x; i < p.convolutionHeight; i += blockDim.x) {
       modulePixels[i] = dilatedPixels[i] = erodedPixels[i] = 0;
@@ -207,8 +221,8 @@ namespace gpudigimorphing {
             digisView.xx(i) < heightMax) {
           num = 0;
           #ifdef GPU_DEBUG
-          if (thisModuleId % 2000 ==1564) {
-        if (threadIdx.x == 0 && (blockIdx.x % moduleConvolutions) == 8) {
+          if (thisModuleId % 2000 ==1701) {
+        if ((blockIdx.x % moduleConvolutions) == 8) {
           printf("Hit at %d row%d col%d\n", thisModuleId, digisView.xx(i), digisView.yy(i));
         }}
           #endif
@@ -220,21 +234,12 @@ namespace gpudigimorphing {
       }
       __syncthreads();
 
-      #ifdef GPU_DEBUG
+#ifdef GPU_DEBUG
       // print one pixel ROC of a module
-      if (thisModuleId % 2000 ==1564) {
+      if (thisModuleId % 2000 == 1701) {
         if (threadIdx.x == 0 && (blockIdx.x % moduleConvolutions) == 8) {
           printf("ROC BEFORE\n");
-          for (int row = 0; row < 80; ++row) {
-            // printf("ROW %d\n", row);
-            for (int col = 0; col < 52; ++col) {
-              auto idx = getIndex(row, col, p.convolutionHeight, morphingConfig.iters_);
-              auto num = modulePixels[idx];
-              bool b = getBit(num, col + morphingConfig.iters_, p.rocWidth);
-              printf("%d", b);
-            }
-            printf("\n");
-          }
+          printModule(modulePixels);
         }
       }
       __syncthreads();
@@ -247,19 +252,10 @@ namespace gpudigimorphing {
 
       #ifdef GPU_DEBUG
       // print one pixel ROC of a module
-      if (thisModuleId % 2000 ==1564) {
+      if (thisModuleId % 2000 ==1701) {
         if (threadIdx.x == 0 && (blockIdx.x % moduleConvolutions) == 8) {
           printf("ROC AFTER DILATE\n");
-          for (int row = 0; row < 80; ++row) {
-            // printf("ROW %d\n", row);
-            for (int col = 0; col < 52; ++col) {
-              auto idx = getIndex(row, col, p.convolutionHeight, morphingConfig.iters_);
-              auto num = dilatedPixels[idx];
-              bool b = getBit(num, col + morphingConfig.iters_, p.rocWidth);
-              printf("%d", b);
-            }
-            printf("\n");
-          }
+          printModule(dilatedPixels);
         }
       }
       __syncthreads();
@@ -272,19 +268,10 @@ namespace gpudigimorphing {
 
 #ifdef GPU_DEBUG
       // print one pixel ROC of a module
-      if (thisModuleId % 2000 ==1564) {
+      if (thisModuleId % 2000 ==1701) {
         if (threadIdx.x == 0 && (blockIdx.x % moduleConvolutions) == 8) {
           printf("ROC AFTER ERODE\n");
-          for (int row = 0; row < 80; ++row) {
-            // printf("ROW %d\n", row);
-            for (int col = 0; col < 52; ++col) {
-              auto idx = getIndex(row, col, p.convolutionHeight, morphingConfig.iters_);
-              auto num = erodedPixels[idx];
-              bool b = getBit(num, col + morphingConfig.iters_, p.rocWidth);
-              printf("%d", b);
-            }
-            printf("\n");
-          }
+          printModule(erodedPixels);
         }
       }
       __syncthreads();
@@ -300,12 +287,8 @@ namespace gpudigimorphing {
         while (hits) {
           if (hits & 1)  // check last bit
           {
-            // assert(col >= 0 && col < morphingConfig.ncols_);
-            // assert(row >= 0 && row < morphingConfig.nrows_);
-#ifdef GPU_DEBUG
-if(!(col >= 0 && col < morphingConfig.ncols_))
-      printf("Fake pixel found at row %d 0 <= col %d < morphingConfig.ncols_ %d in module %d\n", row, col, morphingConfig.ncols_, thisModuleId);
-#endif
+            assert(col >= 0 && col < morphingConfig.ncols_);
+            assert(row >= 0 && row < morphingConfig.nrows_);
             int old = atomicAdd(fakeCounter, 1);
             fakeDigisView.moduleInd()[old] = thisModuleId;
             fakeDigisView.xx()[old] = row;
