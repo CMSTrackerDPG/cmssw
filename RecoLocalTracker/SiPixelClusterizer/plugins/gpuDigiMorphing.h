@@ -38,7 +38,7 @@ int countKernelOverlap(SiPixelMorphingConfig const& c) {
     bitsSet += countBitsSet(c.kernel1_[i]);
   }
   assert(bitsSet > 0);
-  return (bitsSet - 1)/ 2;
+  return (bitsSet - 1) / 2;
 }
 
 int getUpperBoundForFakeDigis(uint32_t wordCounter, SiPixelMorphingConfig const& c) {
@@ -79,23 +79,22 @@ namespace gpudigimorphing {
   const int divideModuleRows = 2;
   const int moduleConvolutions = divideModuleCols * divideModuleRows;
 
-  __device__ void binprintf(long v)
-{
-    uint64_t mask=(long)(1)<<((sizeof(long)<<3)-1);
-    while(mask) {
-        printf("%d", (v&mask ? 1 : 0));
-        mask >>= 1;
+  __device__ void binprintf(long v) {
+    uint64_t mask = (long)(1) << ((sizeof(long) << 3) - 1);
+    while (mask) {
+      printf("%d", (v & mask ? 1 : 0));
+      mask >>= 1;
     }
     printf("\n");
-}
-
-__device__ void printModule(FLAG_KERNEL_TYPE* p){
-  for(int i=0;i<82;++i){
-    binprintf(*(p+i));
   }
-}
 
-  inline __device__ int getIndex(int row, int col, int maxRows, int iters) { return row % maxRows + iters; }
+  __device__ void printModule(FLAG_KERNEL_TYPE* p) {
+    for (int i = 0; i < 82; ++i) {
+      binprintf(*(p + i));
+    }
+  }
+
+  inline __device__ int getIndex(int row, int maxRows, int iters) { return row % maxRows + iters; }
 
   inline __device__ void setBit(FLAG_KERNEL_TYPE& num, int bit, int rocWidth) {
     int b = bit % rocWidth;
@@ -114,9 +113,10 @@ __device__ void printModule(FLAG_KERNEL_TYPE* p){
     int kernelRadius = morphingConfig.iters_;
     int kernelSize = 2 * kernelRadius + 1;
     for (int i = threadIdx.x + heightMin; i < heightMax; i += blockDim.x) {
-      int index = getIndex(i, 0, rocHeight, morphingConfig.iters_);
+      int index = getIndex(i, rocHeight, morphingConfig.iters_);
       FLAG_KERNEL_TYPE hits = 0;
-      if(!isDilate) hits-=1; // get maximum value storable, full ones
+      if (!isDilate)
+        hits -= 1;  // get maximum value storable, full ones
       for (int r1 = -kernelRadius; r1 <= kernelRadius and (isDilate or hits > 0); ++r1) {
         for (int r2 = -kernelRadius; r2 <= kernelRadius and (isDilate or hits > 0); ++r2) {
           if (kernel[(1 + r1) * kernelSize + (1 + r2)] == 1) {
@@ -163,8 +163,8 @@ __device__ void printModule(FLAG_KERNEL_TYPE* p){
 
     auto p = computeROCParameters(morphingConfig);
     assert(p.rocWidth == 52);
-    assert(p.rocHeight==80);
-    assert(p.convolutionHeight==82);
+    assert(p.rocHeight == 80);
+    assert(p.convolutionHeight == 82);
 
 #ifdef GPU_DEBUG
     const int width = FLAG_TYPE_BITS;  // 64
@@ -181,13 +181,13 @@ __device__ void printModule(FLAG_KERNEL_TYPE* p){
     int kernelSize = 2 * kernelRadius + 1;
     auto kernelDilate = kernels;
     auto kernelErode = kernels + kernelSize * kernelSize;
-    #ifdef GPU_DEBUG
-    if(threadIdx.x + blockIdx.x*blockDim.x == 0){
-      printf("%d%d%d\n", *kernelDilate, *(kernelDilate+1), *(kernelDilate+2));
-      printf("%d%d%d\n", *(kernelDilate+3), *(kernelDilate+4), *(kernelDilate+5));
-      printf("%d%d%d\n", *(kernelDilate+6), *(kernelDilate+7), *(kernelDilate+8));
+#ifdef GPU_DEBUG
+    if (threadIdx.x + blockIdx.x * blockDim.x == 0) {
+      printf("%d%d%d\n", *kernelDilate, *(kernelDilate + 1), *(kernelDilate + 2));
+      printf("%d%d%d\n", *(kernelDilate + 3), *(kernelDilate + 4), *(kernelDilate + 5));
+      printf("%d%d%d\n", *(kernelDilate + 6), *(kernelDilate + 7), *(kernelDilate + 8));
     }
-    #endif
+#endif
     // set to zero
     for (int i = threadIdx.x; i < p.convolutionHeight; i += blockDim.x) {
       modulePixels[i] = dilatedPixels[i] = erodedPixels[i] = 0;
@@ -220,14 +220,15 @@ __device__ void printModule(FLAG_KERNEL_TYPE* p){
         if (widthMin <= digisView.yy(i) && digisView.yy(i) < widthMax && heightMin <= digisView.xx(i) &&
             digisView.xx(i) < heightMax) {
           num = 0;
-          #ifdef GPU_DEBUG
-          if (thisModuleId % 2000 ==1701) {
-        if ((blockIdx.x % moduleConvolutions) == 8) {
-          printf("Hit at %d row%d col%d\n", thisModuleId, digisView.xx(i), digisView.yy(i));
-        }}
-          #endif
+#ifdef GPU_DEBUG
+          if (thisModuleId % 2000 == 1701) {
+            if ((blockIdx.x % moduleConvolutions) == 8) {
+              printf("Hit at %d row%d col%d\n", thisModuleId, digisView.xx(i), digisView.yy(i));
+            }
+          }
+#endif
 
-          int index = getIndex(digisView.xx(i), digisView.yy(i), p.rocHeight, morphingConfig.iters_);
+          int index = getIndex(digisView.xx(i), p.rocHeight, morphingConfig.iters_);
           setBit(num, digisView.yy(i) + morphingConfig.iters_, p.rocWidth);
           atomicAdd(modulePixels + index, num);
         }
@@ -250,9 +251,9 @@ __device__ void printModule(FLAG_KERNEL_TYPE* p){
           kernelDilate, morphingConfig, modulePixels, dilatedPixels, heightMin, heightMax, p.rocHeight, true);
       __syncthreads();
 
-      #ifdef GPU_DEBUG
+#ifdef GPU_DEBUG
       // print one pixel ROC of a module
-      if (thisModuleId % 2000 ==1701) {
+      if (thisModuleId % 2000 == 1701) {
         if (threadIdx.x == 0 && (blockIdx.x % moduleConvolutions) == 8) {
           printf("ROC AFTER DILATE\n");
           printModule(dilatedPixels);
@@ -268,7 +269,7 @@ __device__ void printModule(FLAG_KERNEL_TYPE* p){
 
 #ifdef GPU_DEBUG
       // print one pixel ROC of a module
-      if (thisModuleId % 2000 ==1701) {
+      if (thisModuleId % 2000 == 1701) {
         if (threadIdx.x == 0 && (blockIdx.x % moduleConvolutions) == 8) {
           printf("ROC AFTER ERODE\n");
           printModule(erodedPixels);
@@ -280,7 +281,7 @@ __device__ void printModule(FLAG_KERNEL_TYPE* p){
       // compare morphed (erodedPixels) pixels and originals (modulePixels)
       for (int row = threadIdx.x + heightMin; row < heightMax; row += blockDim.x) {
         int col = widthMax - 1;
-        int index = getIndex(row, col, p.rocHeight, morphingConfig.iters_);
+        int index = getIndex(row, p.rocHeight, morphingConfig.iters_);
         FLAG_KERNEL_TYPE hits = (erodedPixels[index] & (~modulePixels[index]));
         hits >>= (FLAG_TYPE_BITS - (morphingConfig.ncols_ / divideModuleCols + 2 * morphingConfig.iters_) +
                   morphingConfig.iters_);

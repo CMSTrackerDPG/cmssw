@@ -272,7 +272,9 @@ int main(void) {
                       d_clusInModule.get(),
                       d_moduleId.get(),
                       d_clus.get(),
-                      n, SiPixelDigisCUDASOAView{}, nullptr);
+                      n,
+                      SiPixelDigisCUDASOAView{},
+                      nullptr);
     cudaDeviceSynchronize();
     cudaCheck(cudaMemcpy(&nModules, d_moduleStart.get(), sizeof(uint32_t), cudaMemcpyDeviceToHost));
 
