@@ -39,6 +39,35 @@ namespace gpuClustering {
     }
   }
 
+  // template <uint32_t nbins, int32_t maxPixInModule, uint32_t nbits>
+  // __device__ void prepareFakeHist(const SiPixelDigisCUDASOAView fakeDigisView,
+  //                          int* numFakes,
+  //                          int numOriginialDigis,
+  //                          cms::cuda::HistoContainer<uint16_t, nbins, maxPixInModule, nbits, uint32_t>* hist,
+  //                          typename cms::cuda::HistoContainer<uint16_t, nbins, maxPixInModule, nbits, uint32_t>::Counter* ws){
+  //   for (auto j = threadIdx.x; j < FakeHist::totbins(); j += blockDim.x) {
+  //     hist.off[j] = 0;
+  //   }
+  //   __syncthreads();
+
+  //   // fill histo
+  //   for (int i = first; i < *numFakes; i += blockDim.x) {
+  //     hist.count(fakeDigisView.yy(i));
+  //   }
+  //   __syncthreads();
+  //   if (threadIdx.x < 32)
+  //     ws[threadIdx.x] = 0;  // used by prefix scan...
+  //   __syncthreads();
+  //   hist.finalize(ws);
+  //   __syncthreads();
+  //   for (int i = first; i < *numFakes; i += blockDim.x) {
+  //     if (fakeDigisView.moduleInd(i) == invalidModuleId)  // skip invalid pixels
+  //       continue;
+  //     hist.fill(fakeDigisView.yy(i), i + numOriginialDigis);
+  //   }
+  //     __syncthreads();  // for hit filling!
+  // }
+
   template <bool isPhase2>
   __global__ void findClus(uint16_t const* __restrict__ id,           // module id of each pixel
                            uint16_t const* __restrict__ x,            // local coordinates of each pixel
@@ -91,8 +120,39 @@ namespace gpuClustering {
       constexpr auto nbins = isPhase2 ? 1024 : phase1PixelTopology::numColsInModule + 2;  //2+2;
       constexpr auto nbits = isPhase2 ? 10 : 9;                                           //2+2;
       using Hist = cms::cuda::HistoContainer<uint16_t, nbins, maxPixInModule, nbits, uint16_t>;
+      using FakeHist = cms::cuda::HistoContainer<uint16_t, nbins, maxPixInModule, nbits, uint32_t>;
       __shared__ Hist hist;
+      __shared__ FakeHist fakeHist;
       __shared__ typename Hist::Counter ws[32];
+      __shared__ typename FakeHist::Counter ws2[32];
+
+      bool useFakeDigisForClustering = (numFakes != nullptr && *numFakes != 0);
+
+      if(useFakeDigisForClustering){
+        // prepareFakeHist<cms::cuda::HistoContainer<uint16_t, nbins, maxPixInModule, nbits, uint32_t>>(fakeDigisView, numFakes, numElements, &fakeHist, &ws2);
+        for (auto j = threadIdx.x; j < FakeHist::totbins(); j += blockDim.x) {
+          fakeHist.off[j] = 0;
+        }
+        __syncthreads();
+
+        // fill histo
+        for (int i = first; i < *numFakes; i += blockDim.x) {
+          fakeHist.count(fakeDigisView.yy(i));
+        }
+        __syncthreads();
+        if (threadIdx.x < 32)
+          ws2[threadIdx.x] = 0;  // used by prefix scan...
+        __syncthreads();
+        fakeHist.finalize(ws2);
+        __syncthreads();
+        for (int i = first; i < *numFakes; i += blockDim.x) {
+          if (fakeDigisView.moduleInd(i) == invalidModuleId)  // skip invalid pixels
+            continue;
+          fakeHist.fill(fakeDigisView.yy(i), i);
+        }
+        __syncthreads();  // for hit filling!
+      }
+
       for (auto j = threadIdx.x; j < Hist::totbins(); j += blockDim.x) {
         hist.off[j] = 0;
       }
