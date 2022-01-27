@@ -80,7 +80,7 @@ namespace gpudigimorphing {
   const int moduleConvolutions = divideModuleCols * divideModuleRows;
 
   __device__ void binprintf(long v) {
-    uint64_t mask = (long)(1) << ((sizeof(long) << 3) - 1);
+    auto mask = 1U << ((sizeof(long) << 3U) - 1U);
     while (mask) {
       printf("%d", (v & mask ? 1 : 0));
       mask >>= 1;
@@ -295,7 +295,7 @@ namespace gpudigimorphing {
             fakeDigisView.xx()[old] = row;
             fakeDigisView.yy()[old] = col;
             fakeDigisView.adc()[old] = morphingConfig.fakeAdc_ * 10;  // calibrate fake digis
-            fakeDigisView.clus()[old] = old;
+            fakeDigisView.clus()[old] = old + numDigis;
           }
           hits >>= 1;
           col--;

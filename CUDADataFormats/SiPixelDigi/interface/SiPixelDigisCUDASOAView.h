@@ -70,13 +70,13 @@ public:
   __device__ __forceinline__ uint32_t pdigi(int i) const { return __ldg(pdigi_ + i); }
   __device__ __forceinline__ uint32_t rawIdArr(int i) const { return __ldg(rawIdArr_ + i); }
 
-  const uint16_t* xx() const { return xx_; }
-  const uint16_t* yy() const { return yy_; }
-  const uint16_t* adc() const { return adc_; }
-  const uint16_t* moduleInd() const { return moduleInd_; }
-  const int32_t* clus() const { return clus_; }
-  const uint32_t* pdigi() const { return pdigi_; }
-  const uint32_t* rawIdArr() const { return rawIdArr_; }
+  __host__ __device__ const uint16_t* xx() const { return xx_; }
+  __host__ __device__ const uint16_t* yy() const { return yy_; }
+  __host__ __device__ const uint16_t* adc() const { return adc_; }
+  __host__ __device__ const uint16_t* moduleInd() const { return moduleInd_; }
+  __host__ __device__ const int32_t* clus() const { return clus_; }
+  __host__ __device__ const uint32_t* pdigi() const { return pdigi_; }
+  __host__ __device__ const uint32_t* rawIdArr() const { return rawIdArr_; }
 
   __host__ __device__ uint16_t* xx() { return xx_; }
   __host__ __device__ uint16_t* yy() { return yy_; }
