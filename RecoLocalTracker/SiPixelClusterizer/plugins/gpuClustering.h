@@ -75,12 +75,12 @@ namespace gpuClustering {
                               int idOffset,
                               uint16_t thisModuleId,
                               uint32_t firstPixel) {
-      auto first = isFakeHist ? threadIdx.x : (firstPixel + threadIdx.x); 
+    auto first = isFakeHist ? threadIdx.x : (firstPixel + threadIdx.x);
 
 #ifdef GPU_DEBUG
-      __shared__ uint32_t totGood;
-      totGood = 0;
-      __syncthreads();
+    __shared__ uint32_t totGood;
+    totGood = 0;
+    __syncthreads();
 #endif
 
     for (auto j = threadIdx.x; j < Hist<isPhase2, isFakeHist>::totbins(); j += blockDim.x) {
@@ -96,7 +96,7 @@ namespace gpuClustering {
         continue;
       hist->count(y[i]);
 #ifdef GPU_DEBUG
-        atomicAdd(&totGood, 1);
+      atomicAdd(&totGood, 1);
 #endif
     }
     __syncthreads();
@@ -106,10 +106,10 @@ namespace gpuClustering {
     hist->finalize(ws);
     __syncthreads();
 #ifdef GPU_DEBUG
-      assert(hist->size() == totGood);
-      if (thisModuleId % 100 == 1)
-        if (threadIdx.x == 0)
-          printf("histo size %d\n", hist->size());
+    assert(hist->size() == totGood);
+    if (thisModuleId % 100 == 1)
+      if (threadIdx.x == 0)
+        printf("histo size %d\n", hist->size());
 #endif
     for (int i = first; i < numElements; i += blockDim.x) {
       if (id[i] == invalidModuleId)  // skip invalid pixels
@@ -225,7 +225,7 @@ namespace gpuClustering {
 
       if (useFakeDigisForClustering) {
         prepareHist<isPhase2, true>(
-            fakeDigisView.moduleInd(), fakeDigisView.yy(), &fakeHist, ws2, *numFakes, 0, thisModuleId,0);
+            fakeDigisView.moduleInd(), fakeDigisView.yy(), &fakeHist, ws2, *numFakes, 0, thisModuleId, 0);
       }
 
       assert((msize == numElements) or ((msize < numElements) and (id[msize] != thisModuleId)));
@@ -371,37 +371,71 @@ namespace gpuClustering {
       // pixel in the cluster ( clus[i] == i ).
       bool more = true;
       int nloops = 0;
-      while (__syncthreads_or(more)) {
-        if (1 == nloops % 2) {
-          for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
-            auto p = hist.begin() + j;
-            auto i = *p + firstPixel;
-            auto m = clusterId[i];
-            while (m != clusterId[m])
-              m = clusterId[m];
-            clusterId[i] = m;
+      if (!useFakeDigisForClustering) {
+        while (__syncthreads_or(more)) {
+          if (1 == nloops % 2) {
+            for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
+              auto p = hist.begin() + j;
+              auto i = *p + firstPixel;
+              auto m = clusterId[i];
+              while (m != clusterId[m])
+                m = clusterId[m];
+              clusterId[i] = m;
+            }
+          } else {
+            more = false;
+            for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
+              auto p = hist.begin() + j;
+              auto i = *p + firstPixel;
+              for (int kk = 0; kk < nnn[k]; ++kk) {
+                auto l = nn[k][kk];
+                auto m = l + firstPixel;
+                assert(m != i);
+                auto old = atomicMin_block(&clusterId[m], clusterId[i]);
+                // do we need memory fence?
+                if (old != clusterId[i]) {
+                  // end the loop only if no changes were applied
+                  more = true;
+                }
+                atomicMin_block(&clusterId[i], old);
+              }  // nnloop
+            }    // pixel loop
           }
-        } else {
-          more = false;
-          for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
-            auto p = hist.begin() + j;
-            auto i = *p + firstPixel;
-            for (int kk = 0; kk < nnn[k]; ++kk) {
-              auto l = nn[k][kk];
-              auto m = l + firstPixel;
-              assert(m != i);
-              auto old = atomicMin_block(&clusterId[m], clusterId[i]);
-              // do we need memory fence?
-              if (old != clusterId[i]) {
-                // end the loop only if no changes were applied
-                more = true;
-              }
-              atomicMin_block(&clusterId[i], old);
-            }  // nnloop
-          }    // pixel loop
-        }
-        ++nloops;
-      }  // end while
+          ++nloops;
+        }  // end while
+      } else {
+        while (__syncthreads_or(more)) {
+          if (1 == nloops % 2) {
+            for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
+              auto p = hist.begin() + j;
+              auto i = *p + firstPixel;
+              auto m = clusterId[i];
+              while (m != clusterId[m])
+                m = clusterId[m];
+              clusterId[i] = m;
+            }
+          } else {
+            more = false;
+            for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
+              auto p = hist.begin() + j;
+              auto i = *p + firstPixel;
+              for (int kk = 0; kk < nnn[k]; ++kk) {
+                auto l = nn[k][kk];
+                auto m = l + firstPixel;
+                assert(m != i);
+                auto old = atomicMin_block(&clusterId[m], clusterId[i]);
+                // do we need memory fence?
+                if (old != clusterId[i]) {
+                  // end the loop only if no changes were applied
+                  more = true;
+                }
+                atomicMin_block(&clusterId[i], old);
+              }  // nnloop
+            }    // pixel loop
+          }
+          ++nloops;
+        }  // end while
+      }
 
 #ifdef GPU_DEBUG
       {
