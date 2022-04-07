@@ -57,6 +57,7 @@ mixData = cms.EDProducer("PreMixingModule",
             workerType = cms.string("PreMixingSiPixelWorker"),
             pixeldigiCollectionSig = cms.InputTag("simSiPixelDigis"),
             pixeldigiCollectionPile = cms.InputTag("simSiPixelDigis"),
+            pixeldigiExtraCollectionPile = cms.InputTag("simSiPixelDigis"),
             PixelDigiCollectionDM = cms.string('siPixelDigisDM'),                   
         ),
         strip = cms.PSet(

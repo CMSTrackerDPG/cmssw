@@ -33,7 +33,8 @@ simHcalUnsuppressedDigis = cms.EDAlias(
 )
 _pixelCommon = cms.VPSet(
     cms.PSet(type = cms.string('PixelDigiedmDetSetVector')),
-    cms.PSet(type = cms.string('PixelDigiSimLinkedmDetSetVector'))
+    cms.PSet(type = cms.string('PixelDigiSimLinkedmDetSetVector')),
+    cms.PSet(type = cms.string('PixelSimHitAddExtraInfoedmDetSetVector'))
 )
 simSiPixelDigis = cms.EDAlias(
     mix = _pixelCommon
