@@ -23,7 +23,8 @@
 // ***********************************************************************************************************************
 class VVIObjF {
 public:
-  VVIObjF(float kappa = 0.01, float beta2 = 1., int mode = 0);  //!< Constructor
+  VVIObjF(float kappa);                         //!< alternative and faster constructor
+  VVIObjF(float kappa, float beta2, int mode);  //!< Constructor
 
   float fcn(float x) const;  //! density (mode=0) or distribution (mode=1) function
   void limits(float& xl,

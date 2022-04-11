@@ -1181,7 +1181,8 @@ int SiPixelTemplateReco::PixelTempReco1D(int id,
     beta2 = 1.;
     if (use_VVIObj) {
       //  VVIObj is a private port of CERNLIB VVIDIS
-      VVIObjF vvidist(kappa, beta2, 1);
+      VVIObjF vvidist(kappa);  // faster constructor
+      // VVIObjF vvidist(kappa, beta2, 1); // full constructor
       prvav = vvidist.fcn(xvav);
     } else {
       //  Use faster but less accurate TMath Vavilov distribution function
