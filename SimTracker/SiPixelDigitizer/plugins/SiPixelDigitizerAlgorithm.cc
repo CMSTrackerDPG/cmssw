@@ -2495,7 +2495,7 @@ void SiPixelDigitizerAlgorithm::module_killing_DB(uint32_t detID) {
 
 void SiPixelDigitizerAlgorithm::lateSignalReweight(const PixelGeomDetUnit* pixdet,
                                                    std::vector<PixelDigi>& digis,
-                                                   std::vector<PixelSimHitAddExtraInfo>& newClass_Sim_extra,
+                                                   std::vector<PixelSimHitExtraInfo>& newClass_Sim_extra,
                                                    const TrackerTopology* tTopo,
                                                    CLHEP::HepRandomEngine* engine) {
   // Function to apply the Charge Reweighting on top of digi in case of PU from mixing library
@@ -2562,10 +2562,10 @@ void SiPixelDigitizerAlgorithm::lateSignalReweight(const PixelGeomDetUnit* pixde
   // loop on the SimHit extra info class
   // apply the reweighting for that SimHit on a cluster way
   bool reweighted = false;
-  std::vector<PixelSimHitAddExtraInfo>::iterator loopTempSH;
+  std::vector<PixelSimHitExtraInfo>::iterator loopTempSH;
   for (loopTempSH = newClass_Sim_extra.begin(); loopTempSH != newClass_Sim_extra.end(); ++loopTempSH) {
     signal_map_type theDigiSignal;
-    PixelSimHitAddExtraInfo TheNewInfo = *loopTempSH;
+    PixelSimHitExtraInfo TheNewInfo = *loopTempSH;
     reweighted = TheNewSiPixelChargeReweightingAlgorithmClass->lateSignalReweight(
         pixdet, digis, TheNewInfo, theDigiSignal, tTopo, engine);
     if (!reweighted) {

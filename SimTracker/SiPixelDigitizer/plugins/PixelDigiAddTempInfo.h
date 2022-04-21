@@ -25,10 +25,10 @@ public:
   PixelDigiAddTempInfo() {
     chan_ = 0;
     index_ = 0;
+    theEntryPoint_ = Local3DPoint(0, 0, 0);
+    theExitPoint_ = Local3DPoint(0, 0, 0);
     theProcessType_ = 0;
     thePartID_ = 0;
-    //    theEntryPoint_(0,0,0);
-    //    theExitPoint_(0,0,0);
     charge_ = 0;
   };
   ~PixelDigiAddTempInfo(){};
@@ -43,9 +43,6 @@ public:
   void addCharge(float charge_to_be_added) { charge_ += charge_to_be_added; };
 
   inline bool operator<(const PixelDigiAddTempInfo& other) const { return channel() < other.channel(); }
-
-  //  bool check_in_list(unsigned int ch, size_t Hindex) {
-  //       if (ch==chan && Hindex==index) { return true; } else { return false; } }
 
 private:
   unsigned int chan_;

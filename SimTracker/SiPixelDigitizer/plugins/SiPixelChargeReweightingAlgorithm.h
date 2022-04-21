@@ -39,7 +39,7 @@ public:
 
   bool lateSignalReweight(const PixelGeomDetUnit* pixdet,
                           std::vector<PixelDigi>& digis,
-                          PixelSimHitAddExtraInfo& loopTempSH,
+                          PixelSimHitExtraInfo& loopTempSH,
                           signal_map_type& theNewDigiSignal,
                           const TrackerTopology* tTopo,
                           CLHEP::HepRandomEngine* engine);
@@ -62,6 +62,8 @@ private:
   bool applyLateReweighting_;
   const bool PrintClusters;
   const bool PrintTemplates;
+
+  static constexpr float cmToMicrons = 10000.f;
 
   std::vector<SiPixelTemplateStore2D> templateStores_;
 

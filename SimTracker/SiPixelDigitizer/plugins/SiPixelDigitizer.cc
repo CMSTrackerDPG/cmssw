@@ -23,7 +23,7 @@
 
 // user include files
 #include "SiPixelDigitizer.h"
-#include "SimDataFormats/TrackerDigiSimLink/interface/PixelSimHitAddExtraInfo.h"
+#include "SimDataFormats/TrackerDigiSimLink/interface/PixelSimHitExtraInfo.h"
 #include "PixelDigiAddTempInfo.h"
 #include "SiPixelDigitizerAlgorithm.h"
 
@@ -103,8 +103,7 @@ namespace cms {
 
     producesCollector.produces<edm::DetSetVector<PixelDigi> >().setBranchAlias(alias);
     producesCollector.produces<edm::DetSetVector<PixelDigiSimLink> >().setBranchAlias(alias + "siPixelDigiSimLink");
-    producesCollector.produces<edm::DetSetVector<PixelSimHitAddExtraInfo> >().setBranchAlias(alias +
-                                                                                             "siPixelExtraSimHit");
+    producesCollector.produces<edm::DetSetVector<PixelSimHitExtraInfo> >().setBranchAlias(alias + "siPixelExtraSimHit");
 
     for (auto const& trackerContainer : trackerContainers) {
       edm::InputTag tag(hitsProducer, trackerContainer);
@@ -257,7 +256,7 @@ namespace cms {
 
     std::vector<edm::DetSet<PixelDigi> > theDigiVector;
     std::vector<edm::DetSet<PixelDigiSimLink> > theDigiLinkVector;
-    std::vector<edm::DetSet<PixelSimHitAddExtraInfo> > theExtraSimHitInfoVector;
+    std::vector<edm::DetSet<PixelSimHitExtraInfo> > theExtraSimHitInfoVector;
 
     if (firstFinalizeEvent_) {
       _pixeldigialgo->init_DynIneffDB(iSetup);
@@ -281,7 +280,7 @@ namespace cms {
         edm::DetSet<PixelDigi> collector(iu->geographicalId().rawId());
         edm::DetSet<PixelDigiSimLink> linkcollector(iu->geographicalId().rawId());
         std::vector<PixelDigiAddTempInfo> tempcollector;
-        edm::DetSet<PixelSimHitAddExtraInfo> tempSHcollector(iu->geographicalId().rawId());
+        edm::DetSet<PixelSimHitExtraInfo> tempSHcollector(iu->geographicalId().rawId());
 
         _pixeldigialgo->digitize(dynamic_cast<const PixelGeomDetUnit*>(iu),
                                  collector.data,
@@ -299,7 +298,7 @@ namespace cms {
             //   check if the new SimHit already exists in the class
             //      if yes : add only the Digi info to the existing entry
             //      if not : create a new entry
-            //          PixelSimHitAddExtraInfo(
+            //          PixelSimHitExtraInfo(
             //          size_t Hindex, Local3DPoint entryP , Local3DPoint exitP, uint32_t detID, std::vector<unsigned int> ch, std::vector<float> InitCharge)
             //   what about the duplicates : 2 SimHits associated to the same Digis ?
             //
@@ -317,7 +316,7 @@ namespace cms {
 
             bool checkInTheList = false;
             if (!checkTwoSimHits) {
-              std::vector<PixelSimHitAddExtraInfo>::iterator loopTempSH;
+              std::vector<PixelSimHitExtraInfo>::iterator loopTempSH;
               for (loopTempSH = tempSHcollector.begin(); loopTempSH != tempSHcollector.end(); ++loopTempSH) {
                 if (loopNewClass->hitIndex() == loopTempSH->hitIndex()) {
                   checkInTheList = true;
@@ -325,10 +324,10 @@ namespace cms {
                 }
               }
               if (!checkInTheList) {
-                PixelSimHitAddExtraInfo newSHEntry(loopNewClass->hitIndex(),
-                                                   loopNewClass->entryPoint(),
-                                                   loopNewClass->exitPoint(),
-                                                   loopNewClass->channel());
+                PixelSimHitExtraInfo newSHEntry(loopNewClass->hitIndex(),
+                                                loopNewClass->entryPoint(),
+                                                loopNewClass->exitPoint(),
+                                                loopNewClass->channel());
                 tempSHcollector.push_back(newSHEntry);
               }
             }
@@ -358,8 +357,8 @@ namespace cms {
     std::unique_ptr<edm::DetSetVector<PixelDigi> > output(new edm::DetSetVector<PixelDigi>(theDigiVector));
     std::unique_ptr<edm::DetSetVector<PixelDigiSimLink> > outputlink(
         new edm::DetSetVector<PixelDigiSimLink>(theDigiLinkVector));
-    std::unique_ptr<edm::DetSetVector<PixelSimHitAddExtraInfo> > outputExtraSim(
-        new edm::DetSetVector<PixelSimHitAddExtraInfo>(theExtraSimHitInfoVector));
+    std::unique_ptr<edm::DetSetVector<PixelSimHitExtraInfo> > outputExtraSim(
+        new edm::DetSetVector<PixelSimHitExtraInfo>(theExtraSimHitInfoVector));
 
     // Step D: write output to file
     iEvent.put(std::move(output));

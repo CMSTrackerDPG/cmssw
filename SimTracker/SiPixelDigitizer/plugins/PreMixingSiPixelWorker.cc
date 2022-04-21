@@ -55,7 +55,7 @@ private:
 
   edm::EDGetTokenT<edm::DetSetVector<PixelDigi>> PixelDigiToken_;   // Token to retrieve information
   edm::EDGetTokenT<edm::DetSetVector<PixelDigi>> PixelDigiPToken_;  // Token to retrieve information
-  edm::EDGetTokenT<edm::DetSetVector<PixelSimHitAddExtraInfo>> PixelDigiPExtraToken_;
+  edm::EDGetTokenT<edm::DetSetVector<PixelSimHitExtraInfo>> PixelDigiPExtraToken_;
   const edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> tTopoToken_;
   const edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> pDDToken_;
 
@@ -71,7 +71,7 @@ private:
   typedef std::multimap<int, PixelDigi>
       OneDetectorMap;  // maps by pixel ID for later combination - can have duplicate pixels
   typedef std::map<uint32_t, OneDetectorMap> SiGlobalIndex;  // map to all data for each detector ID
-  typedef std::multimap<int, PixelSimHitAddExtraInfo> OneExtraInfoMap;
+  typedef std::multimap<int, PixelSimHitExtraInfo> OneExtraInfoMap;
   typedef std::map<uint32_t, OneExtraInfoMap> SiPixelExtraInfo;
 
   SiGlobalIndex SiHitStorage_;
@@ -100,7 +100,7 @@ PreMixingSiPixelWorker::PreMixingSiPixelWorker(const edm::ParameterSet& ps,
 
   PixelDigiToken_ = iC.consumes<edm::DetSetVector<PixelDigi>>(pixeldigi_collectionSig_);
   PixelDigiPToken_ = iC.consumes<edm::DetSetVector<PixelDigi>>(pixeldigi_collectionPile_);
-  PixelDigiPExtraToken_ = iC.consumes<edm::DetSetVector<PixelSimHitAddExtraInfo>>(pixeldigi_extraInfo_);
+  PixelDigiPExtraToken_ = iC.consumes<edm::DetSetVector<PixelSimHitExtraInfo>>(pixeldigi_extraInfo_);
 
   producesCollector.produces<edm::DetSetVector<PixelDigi>>(PixelDigiCollectionDM_);
   producesCollector.produces<PixelFEDChannelCollection>(PixelDigiCollectionDM_);
@@ -161,7 +161,7 @@ void PreMixingSiPixelWorker::addPileups(PileUpEventPrincipal const& pep, edm::Ev
   pep.getByLabel(pixeldigi_collectionPile_, inputHandle);
 
   // added for the Late CR
-  edm::Handle<edm::DetSetVector<PixelSimHitAddExtraInfo>> pixelAddInfo;
+  edm::Handle<edm::DetSetVector<PixelSimHitExtraInfo>> pixelAddInfo;
   pep.getByLabel(pixeldigi_extraInfo_, pixelAddInfo);
   const TrackerTopology* tTopo = &es.getData(tTopoToken_);
   auto const& pDD = es.getData(pDDToken_);
@@ -177,11 +177,11 @@ void PreMixingSiPixelWorker::addPileups(PileUpEventPrincipal const& pep, edm::Ev
       // access the extra information
       loadExtraInformation = true;
       // Iterate on detector units
-      edm::DetSetVector<PixelSimHitAddExtraInfo>::const_iterator detIdIter;
+      edm::DetSetVector<PixelSimHitExtraInfo>::const_iterator detIdIter;
       for (detIdIter = pixelAddInfo->begin(); detIdIter != pixelAddInfo->end(); detIdIter++) {
         uint32_t detid = detIdIter->id;  // = rawid
         OneExtraInfoMap LocalExtraMap;
-        edm::DetSet<PixelSimHitAddExtraInfo>::const_iterator di;
+        edm::DetSet<PixelSimHitExtraInfo>::const_iterator di;
         for (di = detIdIter->data.begin(); di != detIdIter->data.end(); di++) {
           LocalExtraMap.insert(OneExtraInfoMap::value_type((di->hitIndex()), *di));
         }
@@ -217,7 +217,7 @@ void PreMixingSiPixelWorker::addPileups(PileUpEventPrincipal const& pep, edm::Ev
         jtest = SiHitExtraStorage_.find(detID);
         OneExtraInfoMap LocalSimHitExtraMap = jtest->second;
         OneExtraInfoMap::const_iterator ilooper;
-        std::vector<PixelSimHitAddExtraInfo> TempSimExtra;
+        std::vector<PixelSimHitExtraInfo> TempSimExtra;
         for (OneExtraInfoMap::const_iterator iLocal = LocalSimHitExtraMap.begin(); iLocal != LocalSimHitExtraMap.end();
              ++iLocal) {
           TempSimExtra.push_back(iLocal->second);

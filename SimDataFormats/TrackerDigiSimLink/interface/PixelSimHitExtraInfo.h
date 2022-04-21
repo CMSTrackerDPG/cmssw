@@ -1,26 +1,31 @@
-#ifndef PixelSimHitAddExtraInfo_h
-#define PixelSimHitAddExtraInfo_h
+#ifndef PixelSimHitExtraInfo_h
+#define PixelSimHitExtraInfo_h
 
 #include "DataFormats/GeometryVector/interface/LocalPoint.h"
 #include <vector>
 #include <cstdint>
 
-class PixelSimHitAddExtraInfo {
+class PixelSimHitExtraInfo {
 public:
-  PixelSimHitAddExtraInfo(size_t Hindex, Local3DPoint entryP, Local3DPoint exitP, unsigned int ch) {
+  PixelSimHitExtraInfo(size_t Hindex, const Local3DPoint& entryP, const Local3DPoint& exitP, unsigned int ch) {
     index_ = Hindex;
     theEntryPoint_ = entryP;
     theExitPoint_ = exitP;
     chan_.push_back(ch);
   };
-  PixelSimHitAddExtraInfo(){};
-  ~PixelSimHitAddExtraInfo(){};
+  PixelSimHitExtraInfo() {
+    index_ = 0;
+    theEntryPoint_ = Local3DPoint(0, 0, 0);
+    theExitPoint_ = Local3DPoint(0, 0, 0);
+    chan_.push_back(0);
+  };
+  ~PixelSimHitExtraInfo() { chan_.clear(); };
   size_t hitIndex() const { return index_; };
-  Local3DPoint entryPoint() const { return theEntryPoint_; };
-  Local3DPoint exitPoint() const { return theExitPoint_; }
+  const Local3DPoint& entryPoint() const { return theEntryPoint_; };
+  const Local3DPoint& exitPoint() const { return theExitPoint_; }
   std::vector<unsigned int> channel() const { return chan_; };
 
-  inline bool operator<(const PixelSimHitAddExtraInfo& other) const { return hitIndex() < other.hitIndex(); }
+  inline bool operator<(const PixelSimHitExtraInfo& other) const { return hitIndex() < other.hitIndex(); }
 
   void addDigiInfo(unsigned int theDigiChannel) { chan_.push_back(theDigiChannel); }
   bool isInTheList(unsigned int channelToCheck) {

@@ -11,7 +11,7 @@
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 #include "SimTracker/Common/interface/SimHitInfoForLinks.h"
 #include "SimTracker/SiPixelDigitizer/plugins/PixelDigiAddTempInfo.h"
-#include "SimDataFormats/TrackerDigiSimLink/interface/PixelSimHitAddExtraInfo.h"
+#include "SimDataFormats/TrackerDigiSimLink/interface/PixelSimHitExtraInfo.h"
 #include "DataFormats/Math/interface/approx_exp.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupMixingContent.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
@@ -88,7 +88,7 @@ public:
 
   void lateSignalReweight(const PixelGeomDetUnit* pixdet,
                           std::vector<PixelDigi>& digis,
-                          std::vector<PixelSimHitAddExtraInfo>& newClass_Sim_extra,
+                          std::vector<PixelSimHitExtraInfo>& newClass_Sim_extra,
                           const TrackerTopology* tTopo,
                           CLHEP::HepRandomEngine* engine);
 
