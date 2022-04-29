@@ -29,3 +29,14 @@ phase2_tracker.toReplaceWith(pixelDigitizer, _phase2TrackerDigitizer.clone()) # 
 # is needed there in stage2.
 (premix_stage2 & phase2_tracker).toModify(pixelDigitizer, **_premixStage1ModifyDict)
 from CalibTracker.SiPixelESProducers.PixelFEDChannelCollectionProducer_cfi import *
+
+# Run-dependent MC
+from Configuration.ProcessModifiers.runDependentForPixelPULib_cff import runDependentForPixelPULib
+runDependentForPixelPULib.toModify(pixelDigitizer, 
+         UseReweighting = cms.bool(False),
+         applyLateReweighting = cms.untracked.bool(False),
+         store_SimHitEntryExitPoints = cms.untracked.bool(True),
+         AdcFullScale = cms.int32(1023),
+         MissCalibrate = cms.bool(False)
+)
+

@@ -22,16 +22,8 @@ public:
     detectorID_ = detID;
     charge_ = InitCharge;
   };
-  PixelDigiAddTempInfo() {
-    chan_ = 0;
-    index_ = 0;
-    theEntryPoint_ = Local3DPoint(0, 0, 0);
-    theExitPoint_ = Local3DPoint(0, 0, 0);
-    theProcessType_ = 0;
-    thePartID_ = 0;
-    charge_ = 0;
-  };
-  ~PixelDigiAddTempInfo(){};
+  PixelDigiAddTempInfo() = default;
+  ~PixelDigiAddTempInfo() = default;
   unsigned int channel() const { return chan_; };
   size_t hitIndex() const { return index_; };
   Local3DPoint entryPoint() const { return theEntryPoint_; };

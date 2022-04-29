@@ -13,13 +13,8 @@ public:
     theExitPoint_ = exitP;
     chan_.push_back(ch);
   };
-  PixelSimHitExtraInfo() {
-    index_ = 0;
-    theEntryPoint_ = Local3DPoint(0, 0, 0);
-    theExitPoint_ = Local3DPoint(0, 0, 0);
-    chan_.push_back(0);
-  };
-  ~PixelSimHitExtraInfo() { chan_.clear(); };
+  PixelSimHitExtraInfo() = default;
+  ~PixelSimHitExtraInfo() = default;
   size_t hitIndex() const { return index_; };
   const Local3DPoint& entryPoint() const { return theEntryPoint_; };
   const Local3DPoint& exitPoint() const { return theExitPoint_; }

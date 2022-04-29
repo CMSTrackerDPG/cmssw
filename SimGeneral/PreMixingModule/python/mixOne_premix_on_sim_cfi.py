@@ -319,3 +319,7 @@ phase2_hfnose.toModify(mixData,
 # Run-dependent MC
 from Configuration.ProcessModifiers.runDependent_cff import runDependent
 runDependent.toModify(mixData.workers.ecal, timeDependent=True)
+from Configuration.ProcessModifiers.runDependentForPixelPUMix_cff import runDependentForPixelPUMix
+runDependentForPixelPUMix.toModify(mixData.workers.pixel, UseReweighting=False)
+runDependentForPixelPUMix.toModify(mixData.workers.pixel, applyLateReweighting=True)
+runDependentForPixelPUMix.toModify(mixData.workers.pixel, store_SimHitEntryExitPoints=False)
