@@ -407,6 +407,7 @@ private:
 
   //-- calibration smearing
   const bool doMissCalibrate;     // Switch on the calibration smearing
+  const bool doMissCalInLateCR;   // Switch on the calibration smearing
   const float theGainSmearing;    // The sigma of the gain fluctuation (around 1)
   const float theOffsetSmearing;  // The sigma of the offset fluct. (around 0)
 

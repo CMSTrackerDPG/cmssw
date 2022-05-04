@@ -33,10 +33,10 @@ from CalibTracker.SiPixelESProducers.PixelFEDChannelCollectionProducer_cfi impor
 # Run-dependent MC
 from Configuration.ProcessModifiers.runDependent_cff import runDependent
 (runDependent & premix_stage1).toModify(pixelDigitizer, 
-         UseReweighting = cms.bool(False),
-         applyLateReweighting = cms.untracked.bool(False),
-         store_SimHitEntryExitPoints = cms.untracked.bool(True),
-         AdcFullScale = cms.int32(1023),
-         MissCalibrate = cms.bool(False)
+         UseReweighting = False,
+         applyLateReweighting = False,
+         store_SimHitEntryExitPoints = True,
+         AdcFullScale = 1023,
+         MissCalibrate = False
 )
 

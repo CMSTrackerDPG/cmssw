@@ -320,6 +320,8 @@ phase2_hfnose.toModify(mixData,
 from Configuration.ProcessModifiers.runDependent_cff import runDependent
 runDependent.toModify(mixData.workers.ecal, timeDependent=True)
 from Configuration.ProcessModifiers.premix_stage2_cff import premix_stage2
-(runDependent & premix_stage2).toModify(mixData.workers.pixel, UseReweighting=False)
-(runDependent & premix_stage2).toModify(mixData.workers.pixel, applyLateReweighting=True)
-(runDependent & premix_stage2).toModify(mixData.workers.pixel, store_SimHitEntryExitPoints=False)
+(runDependent & premix_stage2).toModify(mixData.workers.pixel,
+         UseReweighting=False,
+         applyLateReweighting=True,
+         store_SimHitEntryExitPoints=False
+)

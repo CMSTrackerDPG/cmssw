@@ -73,6 +73,7 @@ SiPixelSimBlock = cms.PSet(
     ThresholdSmearing_BPix_L2 = cms.double(245.0),
     NoiseInElectrons = cms.double(175.0),
     MissCalibrate = cms.bool(True),
+    MissCalInLateCR = cms.bool(True),
     FPix_SignalResponse_p0 = cms.double(0.0043),
     FPix_SignalResponse_p1 = cms.double(1.31),
     FPix_SignalResponse_p2 = cms.double(93.6),

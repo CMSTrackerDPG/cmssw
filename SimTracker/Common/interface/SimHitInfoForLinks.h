@@ -22,11 +22,11 @@ public:
   const EncodedEventId &eventId() const { return eventId_; }
   const std::vector<unsigned int> &trackIds() const { return trackIds_; }
   std::vector<unsigned int> &trackIds() { return trackIds_; }  // needed ATM in phase2 digitizer
-  unsigned int trackId() const { return trackIds_[0]; }
-  size_t hitIndex() const { return hitIndex_; }
-  unsigned int tofBin() const { return tofBin_; }
-  size_t hitIndex4ChargeRew() const { return hitInd4CR_; }
-  float getAmpl() const { return ampl_; }
+  const unsigned int trackId() const { return trackIds_[0]; }
+  const size_t hitIndex() const { return hitIndex_; }
+  const unsigned int tofBin() const { return tofBin_; }
+  const size_t hitIndex4ChargeRew() const { return hitInd4CR_; }
+  const float getAmpl() const { return ampl_; }
 
 private:
   EncodedEventId eventId_;

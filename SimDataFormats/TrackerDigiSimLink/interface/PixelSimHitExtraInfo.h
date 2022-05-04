@@ -18,7 +18,7 @@ public:
   size_t hitIndex() const { return index_; };
   const Local3DPoint& entryPoint() const { return theEntryPoint_; };
   const Local3DPoint& exitPoint() const { return theExitPoint_; }
-  std::vector<unsigned int> channel() const { return chan_; };
+  const std::vector<unsigned int>& channel() const { return chan_; };
 
   inline bool operator<(const PixelSimHitExtraInfo& other) const { return hitIndex() < other.hitIndex(); }
 
@@ -26,8 +26,10 @@ public:
   bool isInTheList(unsigned int channelToCheck) {
     bool result_in_the_list = false;
     for (unsigned int icheck = 0; icheck < chan_.size(); icheck++) {
-      if (channelToCheck == chan_[icheck])
+      if (channelToCheck == chan_[icheck]) {
         result_in_the_list = true;
+        break;
+      }
     }
     return result_in_the_list;
   }

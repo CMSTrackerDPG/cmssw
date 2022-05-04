@@ -316,6 +316,7 @@ SiPixelDigitizerAlgorithm::SiPixelDigitizerAlgorithm(const edm::ParameterSet& co
 
       // Get the constants for the miss-calibration studies
       doMissCalibrate(conf.getParameter<bool>("MissCalibrate")),       // Enable miss-calibration
+      doMissCalInLateCR(conf.getParameter<bool>("MissCalInLateCR")),   // Enable miss-calibration
       theGainSmearing(conf.getParameter<double>("GainSmearing")),      // sigma of the gain smearing
       theOffsetSmearing(conf.getParameter<double>("OffsetSmearing")),  //sigma of the offset smearing
 
@@ -330,7 +331,7 @@ SiPixelDigitizerAlgorithm::SiPixelDigitizerAlgorithm(const edm::ParameterSet& co
 
       fluctuate(fluctuateCharge ? new SiG4UniversalFluctuation() : nullptr),
       theNoiser(addNoise ? new GaussianTailNoiseGenerator() : nullptr),
-      calmap(doMissCalibrate ? initCal() : std::map<int, CalParameters, std::less<int> >()),
+      calmap((doMissCalibrate || doMissCalInLateCR) ? initCal() : std::map<int, CalParameters, std::less<int> >()),
       theSiPixelGainCalibrationService_(use_ineff_from_db_ ? new SiPixelGainCalibrationOfflineSimService(conf, iC)
                                                            : nullptr),
       pixelEfficiencies_(conf, AddPixelInefficiency, NumberOfBarrelLayers, NumberOfEndcapDisks),
@@ -2590,6 +2591,14 @@ void SiPixelDigitizerAlgorithm::lateSignalReweight(const PixelGeomDetUnit* pixde
           int chan = (*i).first;  // channel number
           std::pair<int, int> ip = PixelDigi::channelToPixel(chan);
           int adc = int(signalInADC);
+          // add MissCalibration
+          if (doMissCalInLateCR) {
+            int row = ip.first;
+            int col = ip.second;
+            adc =
+                int(missCalibrate(detID, tTopo, pixdet, col, row, signalInADC * theElectronPerADC));  //full misscalib.
+          }
+
           if (signalInADC > theAdcFullScLateCR)
             adc = theAdcFullScLateCR;  // Check maximum value
 

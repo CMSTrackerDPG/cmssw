@@ -7,8 +7,8 @@ class PixelDigiAddTempInfo {
 public:
   PixelDigiAddTempInfo(unsigned int ch,
                        size_t Hindex,
-                       Local3DPoint entryP,
-                       Local3DPoint exitP,
+                       const Local3DPoint& entryP,
+                       const Local3DPoint& exitP,
                        int PType,
                        int PartID,
                        uint32_t detID,
@@ -24,14 +24,14 @@ public:
   };
   PixelDigiAddTempInfo() = default;
   ~PixelDigiAddTempInfo() = default;
-  unsigned int channel() const { return chan_; };
-  size_t hitIndex() const { return index_; };
-  Local3DPoint entryPoint() const { return theEntryPoint_; };
-  Local3DPoint exitPoint() const { return theExitPoint_; }
-  int processType() const { return theProcessType_; };
-  int trackID() const { return thePartID_; };
-  uint32_t detID() const { return detectorID_; };
-  float getCharge() const { return charge_; };
+  const unsigned int channel() const { return chan_; };
+  const size_t hitIndex() const { return index_; };
+  const Local3DPoint& entryPoint() const { return theEntryPoint_; };
+  const Local3DPoint& exitPoint() const { return theExitPoint_; }
+  const int processType() const { return theProcessType_; };
+  const int trackID() const { return thePartID_; };
+  const uint32_t detID() const { return detectorID_; };
+  const float getCharge() const { return charge_; };
   void addCharge(float charge_to_be_added) { charge_ += charge_to_be_added; };
 
   inline bool operator<(const PixelDigiAddTempInfo& other) const { return channel() < other.channel(); }

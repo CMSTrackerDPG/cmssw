@@ -34,8 +34,8 @@ simHcalUnsuppressedDigis = cms.EDAlias(
 _pixelCommon = cms.VPSet(
     cms.PSet(type = cms.string('PixelDigiedmDetSetVector')),
     cms.PSet(type = cms.string('PixelDigiSimLinkedmDetSetVector')),
-    cms.PSet(type = cms.string('PixelSimHitExtraInfoedmDetSetVector'))
 )
+
 simSiPixelDigis = cms.EDAlias(
     mix = _pixelCommon
 ) 
@@ -95,6 +95,8 @@ from Configuration.ProcessModifiers.premix_stage1_cff import premix_stage1
         2 : dict(type = "PHGCSimAccumulator"),
     }
 )
+from Configuration.ProcessModifiers.runDependent_cff import runDependent 
+(runDependent).toModify(simSiPixelDigis, mix = _pixelCommon + [cms.PSet(type = cms.string('PixelSimHitExtraInfoedmDetSetVector'))])
 
 from Configuration.Eras.Modifier_phase2_hfnose_cff import phase2_hfnose
 (~phase2_hfnose).toModify(simHFNoseUnsuppressedDigis, mix = None)

@@ -227,9 +227,9 @@ void PreMixingSiPixelWorker::addPileups(PileUpEventPrincipal const& pep, edm::Ev
           if (iu->type().isTrackerPixel()) {
             uint32_t detIDinLoop = iu->geographicalId().rawId();
             if (detIDinLoop == detID) {
-              // probably not the smarter idea...
               digitizer_.lateSignalReweight(
                   dynamic_cast<const PixelGeomDetUnit*>(iu), TempDigis, TempSimExtra, tTopo, engine);
+              break;
             }
           }
         }

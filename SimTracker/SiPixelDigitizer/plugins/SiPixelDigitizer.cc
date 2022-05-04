@@ -87,6 +87,9 @@ namespace cms {
         applyLateReweighting_(iConfig.exists("applyLateReweighting")
                                   ? iConfig.getUntrackedParameter<bool>("applyLateReweighting")
                                   : false),
+        store_SimHitEntryExitPoints_(iConfig.exists("store_SimHitEntryExitPoints")
+                                         ? iConfig.getUntrackedParameter<bool>("store_SimHitEntryExitPoints")
+                                         : false),
         _pixeldigialgo(),
         hitsProducer(iConfig.getParameter<std::string>("hitsProducer")),
         trackerContainers(iConfig.getParameter<std::vector<std::string> >("RoutList")),
@@ -103,7 +106,9 @@ namespace cms {
 
     producesCollector.produces<edm::DetSetVector<PixelDigi> >().setBranchAlias(alias);
     producesCollector.produces<edm::DetSetVector<PixelDigiSimLink> >().setBranchAlias(alias + "siPixelDigiSimLink");
-    producesCollector.produces<edm::DetSetVector<PixelSimHitExtraInfo> >().setBranchAlias(alias + "siPixelExtraSimHit");
+    if (store_SimHitEntryExitPoints_)
+      producesCollector.produces<edm::DetSetVector<PixelSimHitExtraInfo> >().setBranchAlias(alias +
+                                                                                            "siPixelExtraSimHit");
 
     for (auto const& trackerContainer : trackerContainers) {
       edm::InputTag tag(hitsProducer, trackerContainer);
@@ -363,7 +368,8 @@ namespace cms {
     // Step D: write output to file
     iEvent.put(std::move(output));
     iEvent.put(std::move(outputlink));
-    iEvent.put(std::move(outputExtraSim));
+    if (store_SimHitEntryExitPoints_)
+      iEvent.put(std::move(outputExtraSim));
 
     randomEngine_ = nullptr;  // to prevent access outside event
   }
