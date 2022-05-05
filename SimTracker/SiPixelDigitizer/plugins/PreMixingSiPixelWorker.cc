@@ -95,7 +95,7 @@ PreMixingSiPixelWorker::PreMixingSiPixelWorker(const edm::ParameterSet& ps,
   pixeldigi_collectionPile_ = ps.getParameter<edm::InputTag>("pixeldigiCollectionPile");
   pixeldigi_extraInfo_ = ps.getParameter<edm::InputTag>("pixeldigiExtraCollectionPile");
   PixelDigiCollectionDM_ = ps.getParameter<std::string>("PixelDigiCollectionDM");
-  applyLateReweighting_ = ps.getUntrackedParameter<bool>("applyLateReweighting");
+  applyLateReweighting_ = ps.getParameter<bool>("applyLateReweighting");
   LogDebug("PreMixingSiPixelWorker") << "applyLateReweighting_ in PreMixingSiPixelWorker  " << applyLateReweighting_;
 
   PixelDigiToken_ = iC.consumes<edm::DetSetVector<PixelDigi>>(pixeldigi_collectionSig_);

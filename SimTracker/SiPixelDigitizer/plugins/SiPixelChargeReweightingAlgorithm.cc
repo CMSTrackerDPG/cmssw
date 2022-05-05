@@ -69,8 +69,8 @@ SiPixelChargeReweightingAlgorithm::SiPixelChargeReweightingAlgorithm(const edm::
       IDden(conf.exists("TemplateIDdenominator") ? conf.getParameter<int>("TemplateIDdenominator") : 0),
 
       UseReweighting(conf.getParameter<bool>("UseReweighting")),
-      applyLateReweighting_(
-          conf.exists("applyLateReweighting") ? conf.getUntrackedParameter<bool>("applyLateReweighting") : false),
+      applyLateReweighting_(conf.exists("applyLateReweighting") ? conf.getParameter<bool>("applyLateReweighting")
+                                                                : false),
       PrintClusters(conf.getParameter<bool>("PrintClusters")),
       PrintTemplates(conf.getParameter<bool>("PrintTemplates")) {
   if (UseReweighting || applyLateReweighting_) {

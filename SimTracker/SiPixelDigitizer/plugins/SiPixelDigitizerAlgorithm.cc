@@ -196,7 +196,8 @@ SiPixelDigitizerAlgorithm::SiPixelDigitizerAlgorithm(const edm::ParameterSet& co
 
       _signal(),
       makeDigiSimLinks_(conf.getUntrackedParameter<bool>("makeDigiSimLinks", true)),
-      store_SimHitEntryExitPoints_(conf.getUntrackedParameter<bool>("store_SimHitEntryExitPoints", true)),
+      store_SimHitEntryExitPoints_(
+          conf.exists("store_SimHitEntryExitPoints") ? conf.getParameter<bool>("store_SimHitEntryExitPoints") : false),
       use_ineff_from_db_(conf.getParameter<bool>("useDB")),
       use_module_killing_(conf.getParameter<bool>("killModules")),       // boolean to kill or not modules
       use_deadmodule_DB_(conf.getParameter<bool>("DeadModules_DB")),     // boolean to access dead modules from DB
@@ -2505,13 +2506,14 @@ void SiPixelDigitizerAlgorithm::lateSignalReweight(const PixelGeomDetUnit* pixde
   uint32_t detID = pixdet->geographicalId().rawId();
 
   if (UseReweighting) {
-    std::cout << " ******************************** " << std::endl;
-    std::cout << " ******************************** " << std::endl;
-    std::cout << " *****  INCONSISTENCY !!!   ***** " << std::endl;
-    std::cout << " applyLateReweighting_ and UseReweighting can not be true at the same time for PU ! " << std::endl;
-    std::cout << " ---> DO NOT APPLY CHARGE REWEIGHTING TWICE !!! " << std::endl;
-    std::cout << " ******************************** " << std::endl;
-    std::cout << " ******************************** " << std::endl;
+    LogError("PixelDigitizer ") << " ********************************  \n";
+    LogError("PixelDigitizer ") << " ********************************  \n";
+    LogError("PixelDigitizer ") << " *****  INCONSISTENCY !!!   *****  \n";
+    LogError("PixelDigitizer ")
+        << " applyLateReweighting_ and UseReweighting can not be true at the same time for PU ! \n";
+    LogError("PixelDigitizer ") << " ---> DO NOT APPLY CHARGE REWEIGHTING TWICE !!! \n";
+    LogError("PixelDigitizer ") << " ******************************** \n";
+    LogError("PixelDigitizer ") << " ******************************** \n";
     return;
   }
 

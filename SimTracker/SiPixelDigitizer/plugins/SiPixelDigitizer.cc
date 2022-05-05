@@ -84,11 +84,10 @@ namespace cms {
                                      edm::ConsumesCollector& iC)
       : firstInitializeEvent_(true),
         firstFinalizeEvent_(true),
-        applyLateReweighting_(iConfig.exists("applyLateReweighting")
-                                  ? iConfig.getUntrackedParameter<bool>("applyLateReweighting")
-                                  : false),
+        applyLateReweighting_(
+            iConfig.exists("applyLateReweighting") ? iConfig.getParameter<bool>("applyLateReweighting") : false),
         store_SimHitEntryExitPoints_(iConfig.exists("store_SimHitEntryExitPoints")
-                                         ? iConfig.getUntrackedParameter<bool>("store_SimHitEntryExitPoints")
+                                         ? iConfig.getParameter<bool>("store_SimHitEntryExitPoints")
                                          : false),
         _pixeldigialgo(),
         hitsProducer(iConfig.getParameter<std::string>("hitsProducer")),
@@ -312,7 +311,6 @@ namespace cms {
             bool checkTwoSimHits = false;
             if (channelPrevious2 == loopNewClass->channel() && hitFirstOne2 != loopNewClass->hitIndex()) {
               // case of one Digi associated to a second SimHit
-              // std::cout << "     --> identification of the same Digi associated to anothe SimHit ! " << std::endl;
               checkTwoSimHits = true;
             } else {
               channelPrevious2 = loopNewClass->channel();
