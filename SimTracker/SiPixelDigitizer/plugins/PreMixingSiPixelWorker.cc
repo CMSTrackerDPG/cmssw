@@ -188,6 +188,12 @@ void PreMixingSiPixelWorker::addPileups(PileUpEventPrincipal const& pep, edm::Ev
         SiHitExtraStorage_.insert(SiPixelExtraInfo::value_type(detid, LocalExtraMap));
       }  // end loop on detIdIter
     }    // end if applyLateReweighting_
+    else if (!pixelAddInfo.isValid() && applyLateReweighting_) {
+      edm::LogError("PreMixingSiPixelWorker") << " Problem in accessing the Extra Pixel SimHit Collection  !!!! ";
+      edm::LogError("PreMixingSiPixelWorker") << " The Late Charge Reweighting can not be applied ";
+      throw cms::Exception("PreMixingSiPixelWorker")
+          << " Problem in accessing the Extra Pixel SimHit Collection for Late Charge Reweighting \n";
+    }
 
     //loop on all detsets (detectorIDs) inside the input collection
     edm::DetSetVector<PixelDigi>::const_iterator DSViter = input.begin();
