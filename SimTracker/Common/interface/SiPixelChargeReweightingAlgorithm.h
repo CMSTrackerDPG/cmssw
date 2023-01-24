@@ -54,7 +54,7 @@ class SiPixelChargeReweightingAlgorithm {
 public:
   SiPixelChargeReweightingAlgorithm(const edm::ParameterSet& conf, edm::ConsumesCollector iC);
   ~SiPixelChargeReweightingAlgorithm();
-  void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  static void fillPSetDescription(edm::ParameterSetDescription& desc);
 
   // initialization that cannot be done in the constructor
   void init(const edm::EventSetup& es);
@@ -853,8 +853,7 @@ bool SiPixelChargeReweightingAlgorithm::lateSignalReweight(const PixelGeomDetUni
   return true;
 }
 
-void SiPixelChargeReweightingAlgorithm::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
-  edm::ParameterSetDescription desc;
+inline void SiPixelChargeReweightingAlgorithm::fillPSetDescription(edm::ParameterSetDescription& desc) {
   desc.setComment("Charge reweighting algo to simulate irradiation damage in SiPixel detectors");
   desc.add("TemplateIDnumerator", 0);
   desc.add("TemplateIDdenominator", 0);
@@ -862,7 +861,6 @@ void SiPixelChargeReweightingAlgorithm::fillDescriptions(edm::ConfigurationDescr
   desc.add("ApplyLateReweighting", false);
   desc.add("PrintClusters", false);
   desc.add("PrintTemplates", false);
-  descriptions.addWithDefaultLabel(desc);
 }
 
 #endif

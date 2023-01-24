@@ -1028,8 +1028,7 @@ float Phase2TrackerDigitizerAlgorithm::calcQ(float x) {
 
 void Phase2TrackerDigitizerAlgorithm::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
+  SiPixelChargeReweightingAlgorithm::fillPSetDescription(desc);
   desc.add("UseReweighting", false);
-descriptions.addWithDefaultLabel(desc);
+  descriptions.addWithDefaultLabel(desc);
 }
-
-
