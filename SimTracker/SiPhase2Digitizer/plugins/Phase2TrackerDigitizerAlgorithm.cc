@@ -1025,3 +1025,11 @@ float Phase2TrackerDigitizerAlgorithm::calcQ(float x) {
   auto xx = std::min(0.5f * x * x, p1);
   return 0.5f * (1.f - std::copysign(std::sqrt(1.f - unsafe_expf<4>(-xx * (1.f + p2 / (1.f + p3 * xx)))), x));
 }
+
+void Phase2TrackerDigitizerAlgorithm::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+  edm::ParameterSetDescription desc;
+  desc.add("UseReweighting", false);
+descriptions.addWithDefaultLabel(desc);
+}
+
+
