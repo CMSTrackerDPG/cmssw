@@ -216,7 +216,6 @@ DQMOfflinePixelTracking = cms.Sequence( pixelTracksMonitoring *
                                         monitorpixelSoASource )
 
 DQMOuterTracker = cms.Sequence( DQMOfflineDCS *
-                                OuterTrackerSource *
                                 DQMMessageLogger *
                                 DQMOfflinePhysics *
                                 DQMOfflineVertex
