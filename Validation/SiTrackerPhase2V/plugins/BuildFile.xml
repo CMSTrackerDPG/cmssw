@@ -12,6 +12,8 @@
 <use name="SimDataFormats/Vertex"/>
 <use name="SimDataFormats/TrackerDigiSimLink"/>
 <use name="SimTracker/TrackerHitAssociation"/>
+<use name="SimDataFormats/TrackingAnalysis"/>
+<use name="SimTracker/TrackTriggerAssociation"/>
 <use name="Geometry/Records"/>
 <use name="Geometry/TrackerGeometryBuilder"/>
 <use name="Geometry/CommonDetUnit"/>

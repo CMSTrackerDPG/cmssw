@@ -56,7 +56,7 @@ public:
   void analyze(const edm::Event &, const edm::EventSetup &) override;
   void bookHistograms(DQMStore::IBooker &, edm::Run const &, edm::EventSetup const &) override;
   void dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &iSetup) override;
-  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
   // TTStub stacks
   // Global position of the stubs
   MonitorElement *Stub_Barrel_XY = nullptr;     // TTStub barrel y vs x
@@ -202,9 +202,7 @@ void Phase2OTMonitorTTStub::analyze(const edm::Event &iEvent, const edm::EventSe
 }  // end of method
 
 // ------------ method called when starting to processes a run  ------------
-void Phase2OTMonitorTTStub::bookHistograms(DQMStore::IBooker &iBooker,
-                                               edm::Run const &run,
-                                               edm::EventSetup const &es) {
+void Phase2OTMonitorTTStub::bookHistograms(DQMStore::IBooker &iBooker, edm::Run const &run, edm::EventSetup const &es) {
   std::string HistoName;
   const int numDiscs = 5;
   iBooker.setCurrentFolder(topFolderName_ + "/Position");
@@ -541,7 +539,7 @@ void Phase2OTMonitorTTStub::bookHistograms(DQMStore::IBooker &iBooker,
   }
 }
 
-void Phase2OTMonitorTTStub::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+void Phase2OTMonitorTTStub::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   // Phase2OTMonitorTTStub
   edm::ParameterSetDescription desc;
   {
@@ -651,7 +649,7 @@ void Phase2OTMonitorTTStub::fillDescriptions(edm::ConfigurationDescriptions& des
     desc.add<edm::ParameterSetDescription>("TH2TTStub_DisOf_Ring", psd0);
   }
   desc.add<std::string>("TopFolderName", "TrackerPhase2OTStub");
-  desc.add<edm::InputTag>("TTStubs", edm::InputTag("TTStubsFromPhase2TrackerDigis","StubAccepted"));
+  desc.add<edm::InputTag>("TTStubs", edm::InputTag("TTStubsFromPhase2TrackerDigis", "StubAccepted"));
   descriptions.add("Phase2OTMonitorTTStub", desc);
   // or use the following to generate the label from the module's C++ type
   //descriptions.addWithDefaultLabel(desc);

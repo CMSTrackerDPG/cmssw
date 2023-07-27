@@ -57,7 +57,7 @@ public:
   void analyze(const edm::Event &, const edm::EventSetup &) override;
   void bookHistograms(DQMStore::IBooker &, edm::Run const &, edm::EventSetup const &) override;
   void dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &iSetup) override;
-  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
   // TTCluster stacks
   MonitorElement *Cluster_IMem_Barrel = nullptr;
   MonitorElement *Cluster_IMem_Endcap_Disc = nullptr;
@@ -194,8 +194,8 @@ void Phase2OTMonitorTTCluster::analyze(const edm::Event &iEvent, const edm::Even
 // ------------ method called once each job just before starting event loop
 // ------------
 void Phase2OTMonitorTTCluster::bookHistograms(DQMStore::IBooker &iBooker,
-                                                  edm::Run const &run,
-                                                  edm::EventSetup const &es) {
+                                              edm::Run const &run,
+                                              edm::EventSetup const &es) {
   std::string HistoName;
   const int numDiscs = 5;
 
@@ -410,7 +410,7 @@ void Phase2OTMonitorTTCluster::bookHistograms(DQMStore::IBooker &iBooker,
 
 }  // end of method
 
-void Phase2OTMonitorTTCluster::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+void Phase2OTMonitorTTCluster::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   // OuterTrackerMonitorTTCluster
   edm::ParameterSetDescription desc;
   {
@@ -486,7 +486,7 @@ void Phase2OTMonitorTTCluster::fillDescriptions(edm::ConfigurationDescriptions& 
     desc.add<edm::ParameterSetDescription>("TH2TTCluster_RZ", psd0);
   }
   desc.add<std::string>("TopFolderName", "TrackerPhase2TTCluster");
-  desc.add<edm::InputTag>("TTClusters", edm::InputTag("TTClustersFromPhase2TrackerDigis","ClusterInclusive"));
+  desc.add<edm::InputTag>("TTClusters", edm::InputTag("TTClustersFromPhase2TrackerDigis", "ClusterInclusive"));
   descriptions.add("Phase2OTMonitorTTCluster", desc);
   // or use the following to generate the label from the module's C++ type
   //descriptions.addWithDefaultLabel(desc);

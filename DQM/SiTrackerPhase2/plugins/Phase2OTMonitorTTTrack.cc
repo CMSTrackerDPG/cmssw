@@ -45,7 +45,7 @@ public:
   ~Phase2OTMonitorTTTrack() override;
   void analyze(const edm::Event &, const edm::EventSetup &) override;
   void bookHistograms(DQMStore::IBooker &, edm::Run const &, edm::EventSetup const &) override;
-  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
   /// Low-quality TTTracks (All tracks)
   MonitorElement *Track_All_N = nullptr;                 // Number of tracks per event
   MonitorElement *Track_All_NStubs = nullptr;            // Number of stubs per track
@@ -233,8 +233,8 @@ void Phase2OTMonitorTTTrack::analyze(const edm::Event &iEvent, const edm::EventS
 // ------------
 // Creating all histograms for DQM file output
 void Phase2OTMonitorTTTrack::bookHistograms(DQMStore::IBooker &iBooker,
-                                                edm::Run const &run,
-                                                edm::EventSetup const &es) {
+                                            edm::Run const &run,
+                                            edm::EventSetup const &es) {
   std::string HistoName;
 
   /// Low-quality tracks (All tracks, including HQ tracks)
@@ -686,7 +686,7 @@ void Phase2OTMonitorTTTrack::bookHistograms(DQMStore::IBooker &iBooker,
 
 }  // end of method
 
-void Phase2OTMonitorTTTrack::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+void Phase2OTMonitorTTTrack::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   // Phase2OTMonitorTTTrack
   edm::ParameterSetDescription desc;
   {
@@ -797,7 +797,7 @@ void Phase2OTMonitorTTTrack::fillDescriptions(edm::ConfigurationDescriptions& de
     desc.add<edm::ParameterSetDescription>("TH2_Track_Eta_NStubs", psd0);
   }
   desc.add<std::string>("TopFolderName", "TrackerPhase2OTL1Track");
-  desc.add<edm::InputTag>("TTTracksTag", edm::InputTag("l1tTTTracksFromTrackletEmulation","Level1TTTracks"));
+  desc.add<edm::InputTag>("TTTracksTag", edm::InputTag("l1tTTTracksFromTrackletEmulation", "Level1TTTracks"));
   desc.add<int>("HQNStubs", 4);
   desc.add<double>("HQChi2dof", 10.0);
   desc.add<double>("HQBendChi2", 2.2);
