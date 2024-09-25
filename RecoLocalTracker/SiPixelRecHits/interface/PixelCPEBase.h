@@ -20,6 +20,7 @@
 
 #include <TMath.h>
 
+#include "CondFormats/BeamSpotObjects/interface/BeamSpotObjects.h"
 #include "CondFormats/SiPixelObjects/interface/SiPixelGenErrorDBObject.h"
 #include "CondFormats/SiPixelObjects/interface/SiPixelLorentzAngle.h"
 #include "CondFormats/SiPixelObjects/interface/SiPixelTemplateDBObject.h"
@@ -117,7 +118,8 @@ public:
                const SiPixelGenErrorDBObject* genErrorDBObject,
                const SiPixelTemplateDBObject* templateDBobject,
                const SiPixelLorentzAngle* lorentzAngleWidth,
-               int flag = 0  // flag=0 for generic, =1 for templates
+               int flag = 0,  // flag=0 for generic, =1 for templates
+               const BeamSpotObjects* beamSpotObjects = nullptr
   );                         // NEW
 
   static void fillPSetDescription(edm::ParameterSetDescription& desc);
@@ -235,9 +237,14 @@ protected:
 
   const SiPixelGenErrorDBObject* genErrorDBObject_;
   const SiPixelTemplateDBObject* templateDBobject_;
+
+  const BeamSpotObjects* beamSpotObjects_;
+
   bool alpha2Order;  // switch on/off E.B effect.
 
   bool useLAFromDB_;  //Use LA value from the database (used for generic CPE or in template CPE if an error)
+
+  bool useBeamSpot_;  // Use BeamSpot to compute angles for detector positions
 
   bool doLorentzFromAlignment_;
   bool LoadTemplatesFromDB_;

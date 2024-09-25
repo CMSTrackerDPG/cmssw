@@ -4,6 +4,8 @@
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 #include "Geometry/Records/interface/TrackerTopologyRcd.h"
+#include "CondFormats/DataRecord/interface/BeamSpotObjectsRcd.h"
+#include "CondFormats/BeamSpotObjects/interface/BeamSpotObjects.h"
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
 #include "RecoLocalTracker/Records/interface/TkPixelCPERecord.h"
 #include "RecoLocalTracker/ClusterParameterEstimator/interface/PixelClusterParameterEstimator.h"
@@ -32,10 +34,12 @@ private:
   edm::ESGetToken<SiPixelLorentzAngle, SiPixelLorentzAngleRcd> lorentzAngleToken_;
   edm::ESGetToken<SiPixelLorentzAngle, SiPixelLorentzAngleRcd> lorentzAngleWidthToken_;
   edm::ESGetToken<SiPixelGenErrorDBObject, SiPixelGenErrorDBObjectRcd> genErrorDBObjectToken_;
+  edm::ESGetToken<BeamSpotObjects, BeamSpotObjectsRcd> beamSpotToken_;
 
   edm::ParameterSet pset_;
   bool useLAWidthFromDB_;
   bool UseErrorsFromTemplates_;
+  bool useBeamSpot_;
   std::string CPEgenericMode_;  // user's choice of CPE generic
 };
 
@@ -55,6 +59,9 @@ PixelCPEGenericESProducer::PixelCPEGenericESProducer(const edm::ParameterSet& p)
   auto magname = p.getParameter<edm::ESInputTag>("MagneticFieldRecord");
   UseErrorsFromTemplates_ = p.getParameter<bool>("UseErrorsFromTemplates");
 
+  // Use BeamSpot to compute angles for detector positions
+  useBeamSpot_ = p.getParameter<bool>("useBeamSpot");
+
   pset_ = p;
   auto c = setWhatProduced(this, CPEgenericMode_);
   magfieldToken_ = c.consumes(magname);
@@ -66,6 +73,9 @@ PixelCPEGenericESProducer::PixelCPEGenericESProducer(const edm::ParameterSet& p)
   }
   if (UseErrorsFromTemplates_) {
     genErrorDBObjectToken_ = c.consumes();
+  }
+  if (useBeamSpot_) {
+    beamSpotToken_ = c.consumes();
   }
 }
 
@@ -86,13 +96,21 @@ std::unique_ptr<PixelClusterParameterEstimator> PixelCPEGenericESProducer::produ
     //std::cout<<" pass an empty GenError pointer"<<std::endl;
   }
 
+  // BeamSpot from DB
+  const BeamSpotObjects* beamSpotObjects = nullptr;
+
+  if (useBeamSpot_) {
+    beamSpotObjects = &iRecord.get(beamSpotToken_);
+  }
+
   return std::make_unique<PixelCPEGeneric>(pset_,
                                            &iRecord.get(magfieldToken_),
                                            iRecord.get(pDDToken_),
                                            iRecord.get(hTTToken_),
                                            &iRecord.get(lorentzAngleToken_),
                                            genErrorDBObjectProduct,
-                                           lorentzAngleWidthProduct);
+                                           lorentzAngleWidthProduct,
+                                           beamSpotObjects);
 }
 
 void PixelCPEGenericESProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {

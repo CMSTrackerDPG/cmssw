@@ -14,8 +14,10 @@ PixelCPEGenericBase::PixelCPEGenericBase(edm::ParameterSet const& conf,
                                          const TrackerTopology& ttopo,
                                          const SiPixelLorentzAngle* lorentzAngle,
                                          const SiPixelGenErrorDBObject* genErrorDBObject,
-                                         const SiPixelLorentzAngle* lorentzAngleWidth = nullptr)
-    : PixelCPEBase(conf, mag, geom, ttopo, lorentzAngle, genErrorDBObject, nullptr, lorentzAngleWidth, 0),
+                                         const SiPixelLorentzAngle* lorentzAngleWidth,
+                                         const BeamSpotObjects* beamSpotObjects
+                                        )
+    : PixelCPEBase(conf, mag, geom, ttopo, lorentzAngle, genErrorDBObject, nullptr, lorentzAngleWidth, 0, beamSpotObjects),
       edgeClusterErrorX_{static_cast<float>(conf.getParameter<double>("EdgeClusterErrorX"))},
       edgeClusterErrorY_{static_cast<float>(conf.getParameter<double>("EdgeClusterErrorY"))},
       useErrorsFromTemplates_{conf.getParameter<bool>("UseErrorsFromTemplates")},

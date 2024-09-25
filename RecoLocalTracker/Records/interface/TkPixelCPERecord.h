@@ -11,6 +11,7 @@
 #include "CondFormats/DataRecord/interface/SiPixelGenErrorDBObjectRcd.h"
 #include "CalibTracker/Records/interface/SiPixelTemplateDBObjectESProducerRcd.h"
 #include "CalibTracker/Records/interface/SiPixel2DTemplateDBObjectESProducerRcd.h"
+#include "CondFormats/DataRecord/interface/BeamSpotObjectsRcd.h"
 
 #include "FWCore/Utilities/interface/mplVector.h"
 
@@ -22,6 +23,7 @@ class TkPixelCPERecord
                                                                              SiPixelGenErrorDBObjectRcd,
                                                                              SiPixelTemplateDBObjectESProducerRcd,
                                                                              SiPixel2DTemplateDBObjectESProducerRcd,
+                                                                             BeamSpotObjectsRcd,
                                                                              TrackerTopologyRcd> > {};
 
 #endif

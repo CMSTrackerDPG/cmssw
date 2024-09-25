@@ -39,7 +39,8 @@ public:
                       const TrackerTopology& ttopo,
                       const SiPixelLorentzAngle* lorentzAngle,
                       const SiPixelGenErrorDBObject* genErrorDBObject,
-                      const SiPixelLorentzAngle* lorentzAngleWidth);
+                      const SiPixelLorentzAngle* lorentzAngleWidth = nullptr,
+                      const BeamSpotObjects* beamSpotObjects = nullptr);
 
   ~PixelCPEGenericBase() override = default;
 

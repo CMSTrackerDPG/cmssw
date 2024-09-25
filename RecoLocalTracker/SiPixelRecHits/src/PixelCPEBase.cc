@@ -35,7 +35,8 @@ PixelCPEBase::PixelCPEBase(edm::ParameterSet const& conf,
                            const SiPixelGenErrorDBObject* genErrorDBObject,
                            const SiPixelTemplateDBObject* templateDBobject,
                            const SiPixelLorentzAngle* lorentzAngleWidth,
-                           int flag)
+                           int flag,
+                           const BeamSpotObjects* beamSpotObjects)
     //  : useLAAlignmentOffsets_(false), useLAOffsetFromConfig_(false),
     : useLAOffsetFromConfig_(false),
       useLAWidthFromConfig_(false),
@@ -59,6 +60,9 @@ PixelCPEBase::PixelCPEBase(edm::ParameterSet const& conf,
   //-- Template Calibration Object from DB
   if (theFlag_ != 0)
     templateDBobject_ = templateDBobject;  // flag to check if it is generic or templates
+
+  //-- BeamSpot from DB
+  beamSpotObjects_ = beamSpotObjects;
 
   // Configurables
   // For both templates & generic
@@ -109,6 +113,9 @@ PixelCPEBase::PixelCPEBase(edm::ParameterSet const& conf,
   doLorentzFromAlignment_ = conf.getParameter<bool>("doLorentzFromAlignment");
   useLAFromDB_ = conf.getParameter<bool>("useLAFromDB");
 
+  // Use BeamSpot to compute angles for detector positions
+  useBeamSpot_ = conf.getParameter<bool>("useBeamSpot");
+
   LogDebug("PixelCPEBase") << " LA constants - " << lAOffset_ << " " << lAWidthBPix_ << " " << lAWidthFPix_
                            << endl;  //dk
 
@@ -149,7 +156,10 @@ void PixelCPEBase::fillDetParams() {
     assert(p.theDet);
     assert(p.theDet->index() == int(i));
 
-    p.theOrigin = p.theDet->surface().toLocal(GlobalPoint(0, 0, 0));
+    if (useBeamSpot_)
+      p.theOrigin = p.theDet->surface().toLocal(GlobalPoint(beamSpotObjects_->x(), beamSpotObjects_->y(), beamSpotObjects_->z()));
+    else
+      p.theOrigin = p.theDet->surface().toLocal(GlobalPoint(0, 0, 0));
 
     //--- p.theDet->type() returns a GeomDetType, which implements subDetector()
     p.thePart = p.theDet->type().subDetector();
@@ -474,4 +484,5 @@ void PixelCPEBase::fillPSetDescription(edm::ParameterSetDescription& desc) {
   desc.add<double>("lAWidthFPix", 0.0);
   desc.add<bool>("doLorentzFromAlignment", false);
   desc.add<bool>("useLAFromDB", true);
+  desc.add<bool>("useBeamSpot", false);
 }

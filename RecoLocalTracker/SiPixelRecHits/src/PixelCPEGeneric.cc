@@ -32,8 +32,10 @@ PixelCPEGeneric::PixelCPEGeneric(edm::ParameterSet const& conf,
                                  const TrackerTopology& ttopo,
                                  const SiPixelLorentzAngle* lorentzAngle,
                                  const SiPixelGenErrorDBObject* genErrorDBObject,
-                                 const SiPixelLorentzAngle* lorentzAngleWidth = nullptr)
-    : PixelCPEGenericBase(conf, mag, geom, ttopo, lorentzAngle, genErrorDBObject, lorentzAngleWidth) {
+                                 const SiPixelLorentzAngle* lorentzAngleWidth,
+                                 const BeamSpotObjects* beamSpotObjects
+                                )
+    : PixelCPEGenericBase(conf, mag, geom, ttopo, lorentzAngle, genErrorDBObject, lorentzAngleWidth, beamSpotObjects) {
   if (theVerboseLevel > 0)
     LogDebug("PixelCPEGeneric") << " constructing a generic algorithm for ideal pixel detector.\n"
                                 << " CPEGeneric:: VerboseLevel = " << theVerboseLevel;

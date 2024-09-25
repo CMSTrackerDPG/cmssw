@@ -56,7 +56,8 @@ public:
                   const TrackerTopology &,
                   const SiPixelLorentzAngle *,
                   const SiPixelGenErrorDBObject *,
-                  const SiPixelLorentzAngle *);
+                  const SiPixelLorentzAngle * lorentzAngleWidth = nullptr,
+                  const BeamSpotObjects * beamSpotObjects = nullptr);
 
   ~PixelCPEGeneric() override = default;
 

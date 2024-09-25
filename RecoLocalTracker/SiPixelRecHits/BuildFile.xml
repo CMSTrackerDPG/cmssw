@@ -5,6 +5,7 @@
 <use name="vdt_headers"/>
 <use name="CondFormats/SiPixelObjects"/>
 <use name="CondFormats/SiPixelTransient"/>
+<use name="CondFormats/BeamSpotObjects"/>
 <use name="DataFormats/TrackerCommon"/>
 <use name="DataFormats/TrackerRecHit2D"/>
 <use name="DataFormats/TrackingRecHitSoA"/>
