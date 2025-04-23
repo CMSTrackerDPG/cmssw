@@ -45,6 +45,8 @@
 //  V10.00 - Use new template object to reco Phase 1 FPix hits
 //  V10.01 - Fix memory overwriting bug
 //  V10.10 - Change VVIObjF so it only reads kappa
+//  V10.30 - Use "good" end to center the y-projections [for high eta radiation damage],
+//         - use Gaussian fit paramters for y-bias and y-errors, remove chi2min_y warning
 //
 //
 //  Created by Morris Swartz on 10/27/06.
@@ -131,6 +133,7 @@ using namespace SiPixelTemplateReco;
 //! \param      probQ - (output) the Vavilov-distribution-based cluster charge probability
 //! \param      nypix - (output) the projected y-size of the cluster
 //! \param      nxpix - (output) the projected x-size of the cluster
+//! \param      goodEdgeAlgo - (input) bool to indicate whether to use centering based on the good end of the cluster (compatible only with templates derived using the same)
 // *************************************************************************************************************************************
 int SiPixelTemplateReco::PixelTempReco1D(int id,
                                          float cotalpha,
@@ -151,7 +154,8 @@ int SiPixelTemplateReco::PixelTempReco1D(int id,
                                          std::vector<std::pair<int, int> >& zeropix,
                                          float& probQ,
                                          int& nypix,
-                                         int& nxpix)
+                                         int& nxpix,
+                                         bool goodEdgeAlgo)
 
 {
   // Local variables
@@ -463,8 +467,21 @@ int SiPixelTemplateReco::PixelTempReco1D(int id,
 
   // next, center the cluster on template center if necessary
 
-  midpix = (fypix + lypix) / 2;
-  shifty = templ.cytemp() - midpix;
+  if (goodEdgeAlgo) {
+    if (cotbeta >= 0) {
+      midpix = (int)(fypix + 0.5 * cotbeta * templ.zsize() / ysize);
+    } else {
+      midpix = (int)(lypix + 0.5 * cotbeta * templ.zsize() / ysize);
+    }
+  }  //if(goodEdgeAlgo)
+  else {
+    midpix = (fypix + lypix) / 2;
+    shifty = templ.cytemp() - midpix;
+  }  //else
+
+  shifty = BHY - midpix;
+  //  midpix = (fypix + lypix) / 2;
+  //  shifty = templ.cytemp() - midpix;
 
   // calculate new cluster boundaries
 
@@ -913,12 +930,19 @@ int SiPixelTemplateReco::PixelTempReco1D(int id,
     //  Now calculate the mean bias correction and uncertainties
 
     float qyfrac = (qfy - qly) / (qfy + qly);
-    bias = templ.yflcorr(binq, qyfrac) + templ.yavg(binq);
+    if (goodEdgeAlgo) {
+      bias = templ.yflcorr(binq, qyfrac) + templ.ygx0(binq);
+    } else {
+      bias = templ.yflcorr(binq, qyfrac) + templ.yavg(binq);
+    }
 
     // uncertainty and final correction depend upon charge bin
-
     yrec = (0.125f * binl + BHY - 2.5f + rat * (binh - binl) * 0.125f - (float)shifty + originy) * ysize - bias;
-    sigmay = templ.yrms(binq);
+    if (goodEdgeAlgo) {
+      sigmay = templ.ygsig(binq);
+    } else {
+      sigmay = templ.yrms(binq);
+    }
 
     // Do goodness of fit test in y
 
@@ -1258,6 +1282,7 @@ int SiPixelTemplateReco::PixelTempReco1D(int id,
   const bool deadpix = false;
   std::vector<std::pair<int, int> > zeropix;
   int nypix, nxpix;
+  const bool goodEdgeAlgo = false;
 
   return SiPixelTemplateReco::PixelTempReco1D(id,
                                               cotalpha,
@@ -1278,7 +1303,8 @@ int SiPixelTemplateReco::PixelTempReco1D(int id,
                                               zeropix,
                                               probQ,
                                               nypix,
-                                              nxpix);
+                                              nxpix,
+                                              goodEdgeAlgo);
 
 }  // PixelTempReco1D
 
@@ -1328,6 +1354,7 @@ int SiPixelTemplateReco::PixelTempReco1D(int id,
 {
   // Local variables
   const bool deadpix = false;
+  const bool goodEdgeAlgo = false;
   std::vector<std::pair<int, int> > zeropix;
   int nypix, nxpix;
   float locBx, locBz;
@@ -1359,7 +1386,8 @@ int SiPixelTemplateReco::PixelTempReco1D(int id,
                                               zeropix,
                                               probQ,
                                               nypix,
-                                              nxpix);
+                                              nxpix,
+                                              goodEdgeAlgo);
 
 }  // PixelTempReco1D
 
@@ -1405,6 +1433,7 @@ int SiPixelTemplateReco::PixelTempReco1D(int id,
 {
   // Local variables
   const bool deadpix = false;
+  const bool goodEdgeAlgo = false;
   std::vector<std::pair<int, int> > zeropix;
   int nypix, nxpix;
   float locBx, locBz;
@@ -1441,6 +1470,7 @@ int SiPixelTemplateReco::PixelTempReco1D(int id,
                                               zeropix,
                                               probQ,
                                               nypix,
-                                              nxpix);
+                                              nxpix,
+                                              goodEdgeAlgo);
 
 }  // PixelTempReco1D

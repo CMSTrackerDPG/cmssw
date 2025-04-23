@@ -75,7 +75,9 @@ PixelCPEClusterRepair::PixelCPEClusterRepair(edm::ParameterSet const& conf,
   }
 
   speed_ = conf.getParameter<int>("speed");
+  goodEdgeAlgo_ = conf.getParameter<bool>("GoodEdgeAlgo");
   LogDebug("PixelCPEClusterRepair::PixelCPEClusterRepair:") << "Template speed = " << speed_ << "\n";
+  LogDebug("PixelCPEClusterRepair::PixelCPEClusterRepair:") << "GoodEdgeAlgo = " << goodEdgeAlgo_ << "\n";
 
   // this returns the magnetic field value in kgauss (1T = 10 kgauss)
   int theMagField = mag->nominalValue();
@@ -355,7 +357,8 @@ void PixelCPEClusterRepair::callTempReco1D(DetParam const& theDetParam,
                                          zeropix,
                                          theClusterParam.probabilityQ_,
                                          nypix,
-                                         nxpix);
+                                         nxpix,
+                                         goodEdgeAlgo_);
   // ******************************************************************
 
   //--- Check exit status
@@ -718,6 +721,7 @@ void PixelCPEClusterRepair::fillPSetDescription(edm::ParameterSetDescription& de
   desc.add<int>("forwardTemplateID", 0);
   desc.add<int>("directoryWithTemplates", 0);
   desc.add<int>("speed", -2);
+  desc.add<bool>("GoodEdgeAlgo", false);
   desc.add<bool>("UseClusterSplitter", false);
   desc.add<double>("MaxSizeMismatchInY", 0.3);
   desc.add<double>("MinChargeRatio", 0.8);
