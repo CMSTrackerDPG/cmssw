@@ -1,6 +1,5 @@
 import FWCore.ParameterSet.Config as cms
 from Configuration.ProcessModifiers.alpaka_cff import alpaka
-from Configuration.ProcessModifiers.siPixelGoodEdgeAlgo_cff import siPixelGoodEdgeAlgo
 
 #
 # Load all Pixel Cluster Position Estimator ESProducers
@@ -25,8 +24,3 @@ def _addProcessCPEsAlpaka(process):
 
 modifyConfigurationForAlpakaCPEs_ = alpaka.makeProcessModifier(_addProcessCPEsAlpaka)
 
-def _enableGoodEdgeAlgoAlpaka(process):
-    _addProcessCPEsAlpaka(process)
-    process.pixelCPEFastParamsESProducerAlpakaPhase1.GoodEdgeAlgo = True
-
-enableGoodEdgeAlgoForAlpakaCPEs_ = (alpaka & siPixelGoodEdgeAlgo).makeProcessModifier(_enableGoodEdgeAlgoAlpaka)
