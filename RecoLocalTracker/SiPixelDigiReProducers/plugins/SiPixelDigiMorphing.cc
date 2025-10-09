@@ -228,10 +228,14 @@ void SiPixelDigiMorphing::morph(uint64_t* const imap, uint64_t* omap, uint64_t* 
             *o ^= m[jj];
         }
       }
+      if (row == (nrows_ - 1) && roc == (nrocs_ - 1))
+        break;
       for (int ii = 0; ii < ksize_; ii++)
         i[ii]++;
       valid = (valid << 1) | (*i[ksize_ - 1] != 0);
     }
+    if (roc == (nrocs_ - 1))
+      break;
     for (int ii = 0; ii < ksize_; ii++) {
       i[ii] += 2 * iters_;
       valid = (valid << 1) | (*i[ii] != 0);
